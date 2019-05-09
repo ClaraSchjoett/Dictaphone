@@ -1,0 +1,28 @@
+# Compiled
+/*.pdf
+/*.ps
+
+# Windows
+Thumbs.db*
+
+#Atollic
+.cproject
+.project
+/.metadata/*
+/Debug/*
+/Libraries/*
+/.gitignore
+*.launch
+*.ld
+*.zip
+startup.s
+stm32f*.*
+syscalls.c
+tiny_printf.c
+*.prefs
+*.xml
+
+
+
+
+
