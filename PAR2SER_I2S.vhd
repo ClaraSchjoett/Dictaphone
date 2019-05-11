@@ -115,8 +115,10 @@ begin -- architecture rtl
 				else																	-- half  period of ws
 					ws_cnt := 0;														-- reset serial clock counter
 					S_WS <= not S_WS;													-- toggle word select
-					S_R_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in right channel after converting to two's complement
-					S_L_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in left channel after conversions
+					S_R_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(7)) & DIN(6 downto 0) & "0000000000000000";
+					S_L_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(7)) & DIN(6 downto 0) & "0000000000000000";
+					--S_R_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in right channel after converting to two's complement
+					--S_L_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in left channel after conversions
 				end if;
 			end if;
 		end if;
