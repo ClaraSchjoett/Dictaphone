@@ -1,0 +1,50 @@
+ARBEITSJOURNAL PROJEKT DICTAPHONE FRÜHLING 2019
+
+----------------------------------------------------------------------------------
+Dienstag 23.4.19
+
+CS/PW : Zeitplanung, Definition der groben Struktur des Designs
+----------------------------------------------------------------------------------
+Dienstag 30.4.19
+
+CS/PW : Definition der Schnittstellen und nötigen Components (Blöcke) des Designs
+Milestones definiert, siehe ZeitplanungV01.gan
+----------------------------------------------------------------------------------
+Montag 6.5.19
+
+CS : Component PAR2SER geschrieben, dieser wandelt parallele Daten von Host Board 
+in seriellen Daten für den I2S Bus. Pendent: korrekte Erweiterung der 16 bits auf
+24 bits. Im Moment werden bit 17 bis bit 24 nicht verwendet für das Audio-Signal.
+Control- I/O für die Signalisation "übertragen" oder "warten".
+WS Output.
+
+Arguments in die Sensitivy List im File ramp_ctrl.vhd hinzugefügt. Diese fehlende
+Argumente haben die Simulation in Modelsim verfälscht.
+----------------------------------------------------------------------------------
+Mittwoch 8.5.19
+
+CS: Besprechung mit Mähne. Abgeklärt, dass die 16 bit parallel Daten im Block 
+PAR2SER_I2S geshiftet werden, nicht vergrössert! 
+Im Block PAR2SER_I2S fehlt noch die Überprüfung, ob Daten negativ oder nicht
+und danach die korrekte Umwandlung in two's complement.
+----------------------------------------------------------------------------------
+Donnerstag 9.5.19
+
+CS: Testing des Blocks PAR2SER_I2S, ich konnte feststellen, dass das Dreiecksignal
+falsch wiedergeben wird. Bug beschrieben unter Abschnitt Mittwoch.
+
+CS|PW: GitKraken als code sharing platform festgelegt, Konten eingerichtet.
+----------------------------------------------------------------------------------
+Freitag 10.5.19
+
+Zeitplanung geändert (aktueller Zeitplan: ZeitplanungV02) damit wir mehr Zeit für
+die Implementation haben. Milestone "Planung verifizieren lassen" auf Dienstag 
+14.5.19 verschoben wegen Career Day 7.5.19.
+----------------------------------------------------------------------------------
+Samstag 11.5.19
+
+architecture von entity PAR2SER_I2S debugged damit die Konversion zum two's complement
+korrekt funktioniert. 
+Konversion funktioniert wie folgt: MSB vom parallelen input wird invertiert. Somit 
+werden alle Werte unter total possible values / 2 als negativ interpretiert und alle
+Werte darüber als positiv interpretiert.
