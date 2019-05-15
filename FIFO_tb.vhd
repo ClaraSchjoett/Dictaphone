@@ -55,8 +55,13 @@ begin  -- architecture bench
 
 	-- component instantiation
 	DUT: entity work.FIFO
+	
+		-- Apply component generics from FIFO
+		generic map (
+			ADDR_WIDTH	=> ADDR_WIDTH,							-- Data "depth"
+			DATA_WIDTH	=> DATA_WIDTH);
 
-		-- Connect pins of parallel/serial converter to pins of testbench.
+		-- Connect pins of testbench to pins of FIFO.
 		port map (			
 			clk			=> clk,
 			rst			=> rst,
@@ -80,7 +85,15 @@ begin  -- architecture bench
 	begin
   
 		data_in 	<= "0000000000000001" 				-- decimal 1 
-		rd 			<= '1';								-- tell FIFO to read
+		rd 			<= '1';								-- tell FIFO to read 
+		wr			<= '0';								-- tell FIFO not to write
+		wait for 10*CLK_PERIOD;
+		
+		for i in 1 to 10 loop							-- Write decimal 8
+			data_in <= conv_std_logic_vector(i, 8);
+			wait for CLK_PERIOD;
+		end loop;
+		
 		
 		
 		-- SW <= "001"; 						
