@@ -33,16 +33,16 @@ end entity FIFO_tb;
 architecture bench of FIFO_tb is
 
 	-- component ports
-	signal  clk 			: STD_LOGIC := '0'; 			-- 50MHz system clock. We must assign the literal '0' to the signal CLK because not(undefined) is still undefined. 
-	signal	rst 			: STD_LOGIC; 					-- Reset 
-	signal	wr				: STD_LOGIC;					-- Write control signal
-	signal	rd				: STD_LOGIC;					-- Read control signal
-	signal 	data_in			: STD_LOGIC_VECTOR(15 downto 0);-- 16 bit data vector
-	signal	data_out		: STD_LOGIC_VECTOR(15 downto 0);-- 16 bit data vector
-	signal	full			: STD_LOGIC;					-- Signalisation buffer full
-	signal	empty			: STD_LOGIC;					-- Signalisation buffer empty
-	signal	almost_full 	: STD_LOGIC;					-- Signalisation when 3/4 full
-	signal	almost_empty	: STD_LOGIC;					-- Signalisation when 1/4 empty
+	signal  clk 			: STD_LOGIC := '0'; 				-- 50MHz system clock. We must assign the literal '0' to the signal CLK because not(undefined) is still undefined. 
+	signal	rst 			: STD_LOGIC; 						-- Reset 
+	signal	wr				: STD_LOGIC;						-- Write control signal
+	signal	rd				: STD_LOGIC;						-- Read control signal
+	signal 	data_in			: STD_LOGIC_VECTOR(15 downto 0);	-- 16 bit data vector
+	signal	data_out		: STD_LOGIC_VECTOR(15 downto 0);	-- 16 bit data vector
+	signal	full			: STD_LOGIC;						-- Signalisation buffer full
+	signal	empty			: STD_LOGIC;						-- Signalisation buffer empty
+	signal	almost_full 	: STD_LOGIC;						-- Signalisation when 3/4 full
+	signal	almost_empty	: STD_LOGIC;						-- Signalisation when 1/4 empty
 
 	-- stimuli constants
 	constant T_WAIT 		: time := 1 ms;      				-- wait time between stimuli changes
@@ -70,8 +70,8 @@ begin  -- architecture bench
 			almost_empty=> almost_empty);
 
 	-- clock and reset generation
-	CLK <= not CLK after 0.5 * CLK_PERIOD when not tests_done else '0';
-	RST <= 	'1', 
+	clk <= not clk after 0.5 * CLK_PERIOD when not tests_done else '0';
+	rst <= 	'1', 
 			'0' after 2.5 * CLK_PERIOD,
 			'1' after 3.5 * CLK_PERIOD;
 
@@ -79,8 +79,10 @@ begin  -- architecture bench
 	STIM: process
 	begin
   
-		-- SW <= "000"; 						-- all switches 
-		-- wait for 2500000* CLK_PERIOD;			-- Wait clock cycles
+		data_in 	<= "0000000000000001" 				-- decimal 1 
+		rd 			<= '1';								-- tell FIFO to read
+		
+		
 		-- SW <= "001"; 						
 		-- wait for 2500000* CLK_PERIOD;		-- Wait clock cycles
 		-- SW <= "011";		
