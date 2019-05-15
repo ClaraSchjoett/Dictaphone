@@ -3,7 +3,7 @@ ARBEITSJOURNAL PROJEKT DICTAPHONE FRÜHLING 2019
 ----------------------------------------------------------------------------------
 Dienstag 23.4.19
 
-CS/PW : Zeitplanung, Definition der groben Struktur des Designs
+CS|PW : Zeitplanung, Definition der groben Struktur des Designs
 ----------------------------------------------------------------------------------
 Dienstag 30.4.19
 
@@ -37,14 +37,34 @@ CS|PW: GitKraken als code sharing platform festgelegt, Konten eingerichtet.
 ----------------------------------------------------------------------------------
 Freitag 10.5.19
 
-Zeitplanung geändert (aktueller Zeitplan: ZeitplanungV02) damit wir mehr Zeit für
+CS: Zeitplanung geändert (aktueller Zeitplan: ZeitplanungV02) damit wir mehr Zeit für
 die Implementation haben. Milestone "Planung verifizieren lassen" auf Dienstag 
 14.5.19 verschoben wegen Career Day 7.5.19.
 ----------------------------------------------------------------------------------
 Samstag 11.5.19
 
-architecture von entity PAR2SER_I2S debugged damit die Konversion zum two's complement
+CS: architecture von entity PAR2SER_I2S debugged damit die Konversion zum two's complement
 korrekt funktioniert. 
-Konversion funktioniert wie folgt: MSB vom parallelen input wird invertiert. Somit 
-werden alle Werte unter total possible values / 2 als negativ interpretiert und alle
+Konversion funktioniert wie folgt: MSB vom parallelen input wird invertiert wenn der
+Wert kleiner als 2^BITWIDTH ist. Somit werden alle Werte unter 
+total possible values / 2 als negativ interpretiert und alle
 Werte darüber als positiv interpretiert.
+----------------------------------------------------------------------------------
+????????  ??.5.19            <----- PW!!!
+
+PW: SER2PAR_SPI geschrieben. <----- PW!!!
+----------------------------------------------------------------------------------
+Dienstag 14.5.19
+
+CS|PW : SER2PAR_SPI debugged. Test mit Pegel auf LED Matrix fehlt noch.
+FSM_MENU Grundstruktur geschrieben (entity und case-switch statement)
+Ziele für nächsten Dienstag: 
+7 segment display ansteuerung (CS)
+FIFO (PW)
+Lautstärke Pegel Anzeige auf LED Matrix (PW)
+FSM_MENU testbench und debouncer für FSM_MENU(CS)
+FIFO testbench (CS)
+----------------------------------------------------------------------------------
+Mittwoch 15.5.19
+
+
