@@ -61,6 +61,7 @@ begin -- architecture rtl
 
 	-- Ouput signal match
 	SCLK <= S_SCLK;									-- output serial clock
+	CS <= S_CS;
 
 	-- Conversion from parallel to serial and expanding vector length from BITWIDTHIN to BITWIDTHOUT
 	CONVERSION: process (RST, CLK)
@@ -97,8 +98,8 @@ begin -- architecture rtl
             inbit_cnt := inbit_cnt + 1;
             S_DATA <= S_DATA(BITWIDTHIN-2 downto 0) & SDI; --shift SDI into register
           else
-            inbit_cnt := '0';
-            DOUT <= S_DATA(BITWIDTHIN-5) & "000";
+            inbit_cnt := 0;
+            DOUT <= S_DATA(BITWIDTHIN-5 downto 0) & "0000";
             S_DATA <= (others => '0');
             S_CS <= '1';
           end if;
