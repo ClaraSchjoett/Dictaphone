@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- Title      	: 	PAR2SER_I2S
+-- Title      	: 	SER2PAR_SPI
 -- Project    	: 	Dictaphone
 -------------------------------------------------------------------------------
 -- File       	: 	MyFile.vhd
@@ -9,15 +9,14 @@
 -- Last update	: 	2019
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
--- Sources		:	https://www.digikey.com/eewiki/pages/viewpage.action?pageId=84738137#I2STransceiver(VHDL)-CodeDownload
+-- Sources			:
 -------------------------------------------------------------------------------
 -- Description	: 	converts 16 bit SPI serial data to parallel data for
 -- 					transmitting data from PMOD_MIC to FIFO.
---					Serial data is represented in two's compliment (signed).
 -------------------------------------------------------------------------------
 -- Revisions  	:
--- Date        		Version  	Author  	Description
--- 2019-05-10		1.0			Peter		Created
+-- Date        	Version  	Author  	Description
+-- 2019-05-10		1.0				Peter			Created
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				Onboard system clock (50MHz)
@@ -28,6 +27,7 @@
 -- SCLK				Serial clock for SPI interface (50MHz)
 -- DOUT				Parallel data out. Side note: resolution of MIC is 12 bit,
 --					  but gets upscaled to 16bit
+-- CS 				Chip Select; is connected to PMOD Mic (Slave)
 
 -------------------------------------------------------------------------------
 
@@ -56,12 +56,13 @@ end SER2PAR_SPI;
 architecture rtl of SER2PAR_SPI is
 	signal S_SCLK				: std_logic := '0';	-- same here
 	signal S_DATA				: std_logic_vector(BITWIDTHIN-1 downto 0);
-  signal S_CS         : std_logic := '0';
+  signal S_CS         : std_logic := '1';
 begin -- architecture rtl
 
 	-- Ouput signal match
 	SCLK <= S_SCLK;									-- output serial clock
 	CS <= S_CS;
+	--DOUT <= S_DATA;
 
 	-- Conversion from parallel to serial and expanding vector length from BITWIDTHIN to BITWIDTHOUT
 	CONVERSION: process (RST, CLK)
@@ -76,35 +77,44 @@ begin -- architecture rtl
 			S_SCLK <= '1';							-- clear serial clock signal
 
 
-		elsif CLK'event and CLK = '1' and sclk_cnt < (CLK_SCLK_RATIO/2-1) then			-- if not reset, wait for system clock raising edge
+		elsif CLK'event and CLK = '1' then				-- if not reset, wait for system clock raising edge
 
-			if sclk_cnt < (CLK_SCLK_RATIO/2-1) then-- 16 system clock periods per serial clock period
+			if sclk_cnt < (CLK_SCLK_RATIO/2-1) then	-- 16 system clock periods per serial clock period
 				sclk_cnt := sclk_cnt + 1;
-			else
-				sclk_cnt := 0;						-- reset master clock counter
+
+			else -- this else block is executed on every edge of SCLK
+
+				--on positive edge of SCLK (test on zero because its toggled on the end of the process)
+				--hold CS on high for several cycles
+				if S_SCLK = '0' and S_CS = '1' then
+					if wait_cnt <2 then
+						wait_cnt := wait_cnt + 1;
+					else
+						wait_cnt := 0;
+						S_CS <= '0';
+					end if;
+				end if;
+
+				--clock in data
+				if S_SCLK = '0' and S_CS = '0' then
+					if inbit_cnt < BITWIDTHIN then
+						inbit_cnt := inbit_cnt + 1;
+						S_DATA <= S_DATA(BITWIDTHIN-2 downto 0) & SDI; --shift SDI into register
+					else 		--when the whole word is clocked in
+						inbit_cnt := 0;
+						DOUT <= S_DATA(BITWIDTHIN-5 downto 0) & "0000"; -- scale from 12bit to 16bit
+						S_CS <= '1';
+					end if;
+				end if;
+
+
 				S_SCLK <= not S_SCLK;				-- toggle serial clock
+				sclk_cnt := 0;							-- reset master clock counter
+			end if;
 
-        if S_SCLK = '1' and S_CS = '1' then
-          if wait_cnt <2 then
-            wait_cnt := wait_cnt + 1;
-          else
-            wait_cnt := 0;
-            S_CS <= '0';
-          end if;
-        end if;
 
-        if S_SCLK = '0' and S_CS = '0' then
-          if inbit_cnt < BITWIDTHIN then
-            inbit_cnt := inbit_cnt + 1;
-            S_DATA <= S_DATA(BITWIDTHIN-2 downto 0) & SDI; --shift SDI into register
-          else
-            inbit_cnt := 0;
-            DOUT <= S_DATA(BITWIDTHIN-5 downto 0) & "0000";
-            S_DATA <= (others => '0');
-            S_CS <= '1';
-          end if;
-        end if;
-      end if;
+
+
     end if;
 	end process; -- CONVERSION
 
