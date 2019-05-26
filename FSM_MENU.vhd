@@ -27,6 +27,7 @@
 --
 -- Outputs:
 -- STATE			Current state of FSM (two bits). '00' = static (default), '01' = dynamic, '10' = xy-diagram
+-- SSD				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -42,7 +43,8 @@ entity FSM_MENU is
 			DLT			: in std_logic;		
 			PLUS		: in std_logic;
 			MINUS		: in std_logic;
-			STATE		: out std_logic_vector(1 downto 0));	 
+			STATE		: out std_logic_vector(1 downto 0);
+			SSD			: out std_logic_vector(9 downto 0));	 
 
 end entity FSM_MENU;
 
