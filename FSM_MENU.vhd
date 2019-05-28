@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH-TI-EKT
 -- Created    	: 	2019-05-13
--- Last update	: 	2019-05-13
+-- Last update	: 	2019-05-28
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -31,6 +31,7 @@
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 -------------------------------------------------------------------------------
 
@@ -52,42 +53,36 @@ end entity FSM_MENU;
 
 architecture rtl of FSM_MENU is
 
-  type states is (PLAYING, RECORDING, DELETING, IDLE); 		-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
-  signal state_next, state_reg: states;						-- state register
- 
+	type states is (PLAYING, RECORDING, DELETING, IDLE); 	-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
+	signal state_next, state_reg: states;					-- state register
+	signal track_next, track_number: unsigned(4 downto 0); -- := "00001";
+	--shared variable track_next, track_number: natural := 1;		-- track number, range from 1 to 16
 begin -- architecture rtl
 
-	-- state register
+	-- state registers for menu state and track number
 	REG: process(CLK, RST)									-- reset is asynchronous, thus it must appear in the sensitivity list
 	begin --process REG
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
+			track_number <= track_next;
 		end if;
 	end process REG;
 		
 	-- next state logic
-	NSL: process(SHIFT, state_reg)
+	NSL: process(PLAY, RCRD, DLT, state_reg)
 	begin -- process Next State Logic
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
 		case state_reg is
-			when IDLE =>									-- when the state is IDLE, the condition for it to change 
-				-- if SHIFT = '1' then
-					-- state_next <= DYN;
-				-- end if;
-			when PLAYING =>									-- when the state is PLAYING, the condition for it to change
-				-- if SHIFT = '1' then
-					-- state_next <= DYN;
-				-- end if;
-			when RECORDING =>								-- when the state is RECORDING, the condition for it to change
-				-- if SHIFT = '1' then
-					-- state_next <= LED;
-				-- end if;
-			when DELETING =>								-- when the state is DELETING, the condition for it to change
-				-- if SHIFT = '1' then
-					-- state_next <= STAT;
-				-- end if;
+			when IDLE =>									-- when the state is IDLE, the condition for it to change TODO
+				-- TODO
+			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
+				-- TODO
+			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
+				-- TODO
+			when DELETING =>								-- when the state is DELETING, the condition for it to change TODO
+				-- TODO
 			when others => null;
 		end case;
 	end process NSL;
@@ -98,6 +93,37 @@ begin -- architecture rtl
 		         "01" when PLAYING,
 				 "10" when RECORDING,
 				 "11" when DELETING,
-				 "00" when others;			 
+				 "00" when others;		
+				 
+	-- Track number control
+	TRACK: process(CLK, PLUS, MINUS, RST)
+	begin -- process TRACK
+		if RST = '0' then									-- Asynchronous reset (low active)
+			track_number <= "00001";
+		elsif CLK'event and CLK = '1' and PLUS = '1' then
+			if track_number = 16 then						-- Check for overflow
+				track_next <= "00001";
+--				track_number := 1;
+			else 	
+				track_next <= track_number + 1; 			-- If no overflow, increment variable track_number
+--				track_number := track_number+1;
+			end if;											-- variableA <= variableA + 1; NOT ALLOWED
+		elsif CLK'event and CLK = '1' and MINUS = '1' then
+			if track_number = 1	then						-- Check for underflow
+				track_next <= "10000";
+--				track_number := 16;							-- Underflow detected
+			else 											
+				track_next <= track_number - 1;				-- If no underflow, decrement variable track_number
+--				track_number := track_number -1;
+			end if;
+		end if;
+	end process;
 	
+	-- TODO: memory management, evaluation of current track number
+	
+	-- evalutation of current track number for display on SSD
+	SSD(9 downto 5) <= std_logic_vector(track_number);
+	-- test line, delete when finished
+	SSD(4 downto 0) <= std_logic_vector(track_number);
+
 end architecture rtl;
