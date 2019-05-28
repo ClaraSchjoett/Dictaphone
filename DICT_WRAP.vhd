@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-05-08
--- Last update	: 	2019-05-08
+-- Last update	: 	2019-05-28
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -23,6 +23,11 @@
 -- SW<1>			Selects z-axis data for display
 -- SW<2>			Data acknowledge for triangle_ctrl block
 -- 
+-- PLAY				Play current record button
+-- DLT				Delete current track button
+-- RCRD				Record on set track button
+-- PLUS				Increase track number button
+-- MINUS			Decrease track number button
 --
 -- Outputs		:     
 -- MCLK				Master clock (25MHz)      
@@ -30,6 +35,8 @@
 -- WS				Word select signal for I2S bus. High: R channel, low: L channel (48.8kHz)
 -- DOUT				Serial data out. Side note: resolution of DAC is 24 bit, 
 --					thus we must shift incoming 16 bit vector 8 bits left. 
+--
+-- SSD				Seven segment display control
         
 -------------------------------------------------------------------------------
 
@@ -44,19 +51,52 @@ entity DICT_WRAP is
     Port (  CLK 	: in std_logic;
 			RST 	: in std_logic;							-- button "RST" (lower push-button)
 			SW 		: in std_logic_vector(2 downto 0);		-- dip switch
+			PLAY	: in std_logic;							-- button "PLAY" (4th from l.t.r.)
+			DLT		: in std_logic;							-- button "DELETE" (5th from l.t.r)
+			RCRD	: in std_logic;							-- button "RECORD" (3rd from l.t.r)
+			PLUS	: in std_logic;							-- button "PLUS" (2nd from l.t.r)
+			MINUS	: in std_logic;							-- button "MINUS" (1st from l.t.r)
+			
             --DATA	: out std_logic_vector(7 downto 0));		-- parallel data 8 bit
 			MCLK 	: out std_logic;						-- master clock for I2S (25MHz)
 			SCLK	: out std_logic;						-- serial clock for I2S (3.125MHz)
             WS 		: out std_logic;						-- word select (48.8kHz)
-			DOUT	: out std_logic);						-- serial data out for I2S
+			DOUT	: out std_logic;						-- serial data out for I2S
+			SSD		: out std_logic_vector(31 downto 0));	-- Seven segment display control
 
 end DICT_WRAP;
 
 architecture str of DICT_WRAP is
 
 	signal S_DATA 	: std_logic_vector(7 downto 0);
+	signal S_PLAY	: std_logic;
+	signal S_DLT	: std_logic;
+	signal S_RCRD	: std_logic;
+	signal S_PLUS	: std_logic;
+	signal S_MINUS	: std_logic;
+	signal S_BCD	: std_logic_vector(9 downto 0);
+--	signal S_SSD	: std_logic_vector(31 downto 0);
+	
+	signal S_NPLAY	: std_logic;
+	signal S_NDLT	: std_logic;
+	signal S_NRCRD	: std_logic;
+	signal S_NPLUS	: std_logic;
+	signal S_NMINUS	: std_logic;
 
 begin
+
+	-- assign inputs and 
+	-- invert logical level of following buttons to avoid changing debouncer
+	S_PLAY <= not PLAY;
+	S_DLT  <= not DLT;
+	S_RCRD <= not RCRD;
+	S_PLUS <= not PLUS;
+	S_MINUS <= not MINUS;
+	
+--	SSD <= S_SSD;
+	
+	
+	
 
 	TRIA: entity work.triangle_ctrl		-- direct instantiation of component triangle generator
 		port map(	
@@ -74,5 +114,55 @@ begin
 					SCLK 	=> SCLK,
 					WS 		=> WS,
 					DOUT 	=> DOUT);
+					
+	DEB_PLAY: entity work.debouncer		-- direct instantiation of component debouncer for play button
+	port map(	
+					CLK 	=> CLK,
+					RST 	=> RST,
+					I 		=> S_PLAY,
+					O		=> S_NPLAY);
+					
+	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
+	port map(	
+					CLK 	=> CLK,
+					RST 	=> RST,
+					I 		=> S_DLT,
+					O		=> S_NDLT);
+					
+	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
+	port map(	
+					CLK 	=> CLK,
+					RST 	=> RST,
+					I 		=> S_RCRD,
+					O		=> S_NRCRD);
+					
+	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
+	port map(	
+					CLK 	=> CLK,
+					RST 	=> RST,
+					I 		=> S_PLUS,
+					O		=> S_NPLUS);
+					
+	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
+	port map(	
+					CLK 	=> CLK,
+					RST 	=> RST,
+					I 		=> S_MINUS,
+					O		=> S_NMINUS);
+					
+	MENU: entity work.FSM_MENU			-- direct instantiation of component FSM_MENU, the menu control
+		port map(	CLK 	=> CLK,
+					RST 	=> RST,
+					PLAY 	=> S_NPLAY,
+					DLT 	=> S_NDLT,
+					RCRD	=> S_NRCRD,
+					PLUS 	=> S_NPLUS,
+					MINUS	=> S_NMINUS,
+					STATE	=> open,
+					SSD		=> S_BCD);
+					
+	TRANS: entity work.BCD2SSD			-- direct instantiation of component translation BCD to SSD control signal
+		port map(	BCD 	=> S_BCD,
+					SSD 	=> SSD);
 				
 end; -- architecture str

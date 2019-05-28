@@ -1,0 +1,38 @@
+# You have to replace <ENTITY_PORT_NAME_xxx> with the name of the Output port
+# of your top entity
+
+set_location_assignment PIN_T3 -to SSD[0]
+set_location_assignment PIN_R6 -to SSD[1]
+set_location_assignment PIN_R5 -to SSD[2]
+set_location_assignment PIN_P7 -to SSD[3]
+set_location_assignment PIN_N8 -to SSD[4]
+set_location_assignment PIN_N7 -to SSD[5]
+set_location_assignment PIN_P8 -to SSD[6]
+set_location_assignment PIN_P6 -to SSD[7]
+
+set_location_assignment PIN_R10 -to SSD[8]
+set_location_assignment PIN_T9  -to SSD[9]
+set_location_assignment PIN_R9  -to SSD[10]
+set_location_assignment PIN_R8  -to SSD[11]
+set_location_assignment PIN_T7  -to SSD[12]
+set_location_assignment PIN_R7  -to SSD[13]
+set_location_assignment PIN_T4  -to SSD[14]
+set_location_assignment PIN_T8  -to SSD[15]
+
+set_location_assignment PIN_U9  -to SSD[16]
+set_location_assignment PIN_W8  -to SSD[17]
+set_location_assignment PIN_V8  -to SSD[18]
+set_location_assignment PIN_Y4  -to SSD[19]
+set_location_assignment PIN_T11 -to SSD[20]
+set_location_assignment PIN_R11 -to SSD[21]
+set_location_assignment PIN_T10 -to SSD[22]
+set_location_assignment PIN_W7  -to SSD[23]
+
+set_location_assignment PIN_U11 -to SSD[24]
+set_location_assignment PIN_G18 -to SSD[25]
+set_location_assignment PIN_M8  -to SSD[26]
+set_location_assignment PIN_L6  -to SSD[27]
+set_location_assignment PIN_W10 -to SSD[28]
+set_location_assignment PIN_U10 -to SSD[29]
+set_location_assignment PIN_V9  -to SSD[30]
+set_location_assignment PIN_L7  -to SSD[31]

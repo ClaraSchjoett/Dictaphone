@@ -64,13 +64,14 @@ begin -- architecture rtl
 	begin --process REG
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
+			track_number <= "00001";
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
 			track_number <= track_next;
 		end if;
 	end process REG;
 		
-	-- next state logic
+	-- next state logic MUST BE PURELY COMBINATIONAL
 	NSL: process(PLAY, RCRD, DLT, state_reg)
 	begin -- process Next State Logic
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
@@ -88,33 +89,26 @@ begin -- architecture rtl
 	end process NSL;
 	
 	-- selected signal assigment, concurrent form
-	with state_reg select 			-- assing output value to STATE, depending on the current state
+	with state_reg select 									-- assing output value to STATE, depending on the current state
 		STATE <= "00" when IDLE,
 		         "01" when PLAYING,
 				 "10" when RECORDING,
 				 "11" when DELETING,
 				 "00" when others;		
 				 
-	-- Track number control
-	TRACK: process(CLK, PLUS, MINUS, RST)
+	-- Track number control, must be purely combinational
+	TRACK: process(PLUS, MINUS, track_number)
 	begin -- process TRACK
-		if RST = '0' then									-- Asynchronous reset (low active)
-			track_number <= "00001";
-		elsif CLK'event and CLK = '1' and PLUS = '1' then
+		track_next <= track_number;
+		if PLUS = '1' then
+			track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
 			if track_number = 16 then						-- Check for overflow
 				track_next <= "00001";
---				track_number := 1;
-			else 	
-				track_next <= track_number + 1; 			-- If no overflow, increment variable track_number
---				track_number := track_number+1;
-			end if;											-- variableA <= variableA + 1; NOT ALLOWED
-		elsif CLK'event and CLK = '1' and MINUS = '1' then
+			end if;											-- variableA := variableA + 1; NOT ALLOWED
+		elsif MINUS = '1' then
+			track_next <= track_number - 1;					-- If no underflow, decrement variable track_number
 			if track_number = 1	then						-- Check for underflow
 				track_next <= "10000";
---				track_number := 16;							-- Underflow detected
-			else 											
-				track_next <= track_number - 1;				-- If no underflow, decrement variable track_number
---				track_number := track_number -1;
 			end if;
 		end if;
 	end process;

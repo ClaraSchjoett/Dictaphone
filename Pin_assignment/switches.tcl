@@ -1,10 +1,10 @@
 # You have to replace <ENTITY_PORT_NAME_xxx> with the name of the Output port
 # of your top entity
-set_location_assignment PIN_B11  -to RST
-# set_location_assignment PIN_A11  -to <ENTITY_PORT_NAME_CONNECTED_TO_SW2>
-# set_location_assignment PIN_B12  -to <ENTITY_PORT_NAME_CONNECTED_TO_SW3>
-# set_location_assignment PIN_A12  -to <ENTITY_PORT_NAME_CONNECTED_TO_SW4>
-# set_location_assignment PIN_G22  -to <ENTITY_PORT_NAME_CONNECTED_TO_SW5>
-# set_location_assignment PIN_AA11 -to <ENTITY_PORT_NAME_CONNECTED_TO_SW6>
-# set_location_assignment PIN_AB11 -to <ENTITY_PORT_NAME_CONNECTED_TO_SW7>
+set_location_assignment PIN_B11  -to MINUS
+set_location_assignment PIN_A11  -to PLUS
+set_location_assignment PIN_B12  -to RCRD
+set_location_assignment PIN_A12  -to PLAY
+set_location_assignment PIN_G22  -to DLT
+set_location_assignment PIN_AA11 -to RST
+# set_location_assignment PIN_AB11 -to MODE
 
