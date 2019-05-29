@@ -6,7 +6,7 @@
 -- Author     : Clara Schjoett
 -- Company    : BFH
 -- Created    : 2018-12-23
--- Last update: 2019-01-19
+-- Last update: 2019-05-29
 -- Platform   : Xilinx ISE 14.7
 -- Standard   : VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -16,6 +16,7 @@
 -- Date        Version  Author  Description
 -- 2018-12-23  1.0      Clara	Created
 -- 2019-01-19  1.1		Clara	Changed, comments added
+-- 2019-05-29  1.1		Clara	Reset changed from high-active to low-active to use in project Dictaphone
 -------------------------------------------------------------------------------
 --  Inputs:
 --		CLK				Onboard system clock
@@ -54,7 +55,7 @@ begin -- architecture debouncer
 	REG: process(CLK, RST) is						-- reset is asynchronous, hence is must occur in sensitivity list
 	begin -- process REG
 
-		if RST = '1' then							-- reset is high-active 
+		if RST = '0' then							-- reset is high-active 
 			D1 <= '0';	
 			CNT_OUT <= (others => '0');
 			O <= '0';			

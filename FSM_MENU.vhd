@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH-TI-EKT
 -- Created    	: 	2019-05-13
--- Last update	: 	2019-05-28
+-- Last update	: 	2019-05-29
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -22,12 +22,12 @@
 -- PLAY				Sets FSM to state PLAYING (debounced impulse, clock cycle duration)
 -- RCRD				RECORDING(debounced impulse, clock cycle duration)
 -- DLT				DELETING selected track (debounced impulse, clock cycle duration)
--- PLUS				One track forwards
--- MINUS			One track backwards
+-- PLUS				One track forwards (debounced impulse, clock cycle duration)
+-- MINUS			One track backwards (debounced impulse, clock cycle duration)
 --
 -- Outputs:
 -- STATE			Current state of FSM (two bits). '00' = static (default), '01' = dynamic, '10' = xy-diagram
--- SSD				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
+-- BCD				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -45,7 +45,7 @@ entity FSM_MENU is
 			PLUS		: in std_logic;
 			MINUS		: in std_logic;
 			STATE		: out std_logic_vector(1 downto 0);
-			SSD			: out std_logic_vector(9 downto 0));	 
+			BCD			: out std_logic_vector(9 downto 0));	 
 
 end entity FSM_MENU;
 
@@ -56,7 +56,7 @@ architecture rtl of FSM_MENU is
 	type states is (PLAYING, RECORDING, DELETING, IDLE); 	-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
 	signal state_next, state_reg: states;					-- state register
 	signal track_next, track_number: unsigned(4 downto 0); -- := "00001";
-	--shared variable track_next, track_number: natural := 1;		-- track number, range from 1 to 16
+
 begin -- architecture rtl
 
 	-- state registers for menu state and track number
@@ -71,13 +71,21 @@ begin -- architecture rtl
 		end if;
 	end process REG;
 		
-	-- next state logic MUST BE PURELY COMBINATIONAL
+	-- next state logic MUST BE PURELY COMBINATORIAL!
 	NSL: process(PLAY, RCRD, DLT, state_reg)
 	begin -- process Next State Logic
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
 		case state_reg is
 			when IDLE =>									-- when the state is IDLE, the condition for it to change TODO
 				-- TODO
+				-- Test lines, adjust 
+				if PLAY = '1' then
+					state_next <= PLAYING;
+				elsif RCRD = '1' then 
+					state_next <= RECORDING;
+				elsif DLT = '1' then
+					state_next <= DELETING;
+				end if;
 			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
 				-- TODO
 			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
@@ -96,7 +104,7 @@ begin -- architecture rtl
 				 "11" when DELETING,
 				 "00" when others;		
 				 
-	-- Track number control, must be purely combinational
+	-- Track number control, must be purely combinatorial!
 	TRACK: process(PLUS, MINUS, track_number)
 	begin -- process TRACK
 		track_next <= track_number;
@@ -116,8 +124,8 @@ begin -- architecture rtl
 	-- TODO: memory management, evaluation of current track number
 	
 	-- evalutation of current track number for display on SSD
-	SSD(9 downto 5) <= std_logic_vector(track_number);
+	BCD(9 downto 5) <= std_logic_vector(track_number);
 	-- test line, delete when finished
-	SSD(4 downto 0) <= std_logic_vector(track_number);
+	BCD(4 downto 0) <= std_logic_vector(track_number);
 
 end architecture rtl;

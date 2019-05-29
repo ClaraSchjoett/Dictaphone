@@ -46,6 +46,9 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.std_logic_arith.all;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
+-- Own packages
+use work.gecko4_education_pkg.all;
+
 
 entity DICT_WRAP is
     Port (  CLK 	: in std_logic;
@@ -56,13 +59,13 @@ entity DICT_WRAP is
 			RCRD	: in std_logic;							-- button "RECORD" (3rd from l.t.r)
 			PLUS	: in std_logic;							-- button "PLUS" (2nd from l.t.r)
 			MINUS	: in std_logic;							-- button "MINUS" (1st from l.t.r)
-			
-            --DATA	: out std_logic_vector(7 downto 0));		-- parallel data 8 bit
+		
 			MCLK 	: out std_logic;						-- master clock for I2S (25MHz)
 			SCLK	: out std_logic;						-- serial clock for I2S (3.125MHz)
             WS 		: out std_logic;						-- word select (48.8kHz)
 			DOUT	: out std_logic;						-- serial data out for I2S
-			SSD		: out std_logic_vector(31 downto 0));	-- Seven segment display control
+			SSD		: out std_logic_vector(31 downto 0);	-- Seven segment display control
+			LED		: out std_logic_matrix(1 to 10, 1 to 12));
 
 end DICT_WRAP;
 
@@ -75,17 +78,17 @@ architecture str of DICT_WRAP is
 	signal S_PLUS	: std_logic;
 	signal S_MINUS	: std_logic;
 	signal S_BCD	: std_logic_vector(9 downto 0);
---	signal S_SSD	: std_logic_vector(31 downto 0);
 	
 	signal S_NPLAY	: std_logic;
 	signal S_NDLT	: std_logic;
 	signal S_NRCRD	: std_logic;
 	signal S_NPLUS	: std_logic;
 	signal S_NMINUS	: std_logic;
+	signal S_STATE	: std_logic_vector(1 downto 0);
 
 begin
 
-	-- assign inputs and 
+	-- assign inputs and outputs
 	-- invert logical level of following buttons to avoid changing debouncer
 	S_PLAY <= not PLAY;
 	S_DLT  <= not DLT;
@@ -93,9 +96,9 @@ begin
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
 	
---	SSD <= S_SSD;
-	
-	
+	-- Test lines to visualise current state
+	LED(1, 1) <= S_STATE(0);
+	LED(1, 2) <= S_STATE(1);
 	
 
 	TRIA: entity work.triangle_ctrl		-- direct instantiation of component triangle generator
@@ -158,8 +161,8 @@ begin
 					RCRD	=> S_NRCRD,
 					PLUS 	=> S_NPLUS,
 					MINUS	=> S_NMINUS,
-					STATE	=> open,
-					SSD		=> S_BCD);
+					STATE	=> S_STATE,
+					BCD		=> S_BCD);
 					
 	TRANS: entity work.BCD2SSD			-- direct instantiation of component translation BCD to SSD control signal
 		port map(	BCD 	=> S_BCD,
