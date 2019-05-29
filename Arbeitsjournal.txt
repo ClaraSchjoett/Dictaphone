@@ -68,3 +68,20 @@ FIFO testbench (CS)
 Mittwoch 15.5.19
 
 
+----------------------------------------------------------------------------------
+Dienstag 28.5.19
+CS: BCD2SSD geschrieben, Konversion von 2 binärcodierte Zahlen (0 bis 16) für die
+Anzeige auf dem Sieben Segment Display.
+Besprechung mit Maehne um FSM_MENU zu bereinigen (syntaktische und strukturelle
+Fehler behoben).
+
+----------------------------------------------------------------------------------
+Mittwoch 28.5.19
+CS: Ziele vom 14.5.19 die erfüllt sind: 
+7 segement Ansteuerung, FSM_menu und debouncer direkt auf HW getestet.
+
+Implementierung von State Machine mit den States "PLAYING, RECORDING" etc fehlt noch.
+Implementierung von Anzeige Dot auf SSD fehlt noch.
+LED Matrix ansteuerung fehlt noch.
+
+
