@@ -46,7 +46,7 @@ entity PAR2SER_I2S is
 
 	generic(	MCLK_SCLK_RATIO	: integer:= 16;		-- number of clock periods per serial clock period. specs: MCLK 25MHz, SCLK 3.125MHz, ratio: 8
 				SCLK_WS_RATIO	: integer:= 64;		-- number of serial clock periods per word select phase. specs: WS clock 48.8kHz, ratio 64
-				BITWIDTHIN		: integer:= 8;		-- parallel data width
+				BITWIDTHIN		: integer:= 16;		-- parallel data width
 				BITWIDTHOUT		: integer:= 24);	-- serial data width
 				
 	port( 		CLK            	: in std_logic;		-- system clock (50MHz)
@@ -118,10 +118,8 @@ begin -- architecture rtl
 				else																	-- half  period of ws
 					ws_cnt := 0;														-- reset serial clock counter
 					S_WS <= not S_WS;													-- toggle word select
-					S_R_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(7)) & DIN(6 downto 0) & "0000000000000000"; -- latch in right channel after converting to two's complement
-					S_L_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(7)) & DIN(6 downto 0) & "0000000000000000"; -- latch in left channel after conversions
-					--S_R_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in right channel after converting to two's complement
-					--S_L_DATA(BITWIDTHOUT-1 downto 0) <= (not(DIN) + '1') & "0000000000000000";	-- latch in left channel after conversions
+					S_R_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(15)) & DIN(14 downto 0) & "00000000"; -- latch in right channel after converting to two's complement
+					S_L_DATA(BITWIDTHOUT-1 downto 0) <= not(DIN(15)) & DIN(14 downto 0) & "00000000"; -- latch in left channel after conversions
 				end if;
 			end if;
 		end if;
