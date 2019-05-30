@@ -60,6 +60,7 @@ entity DICT_WRAP is
 			PLUS	: in std_logic;							-- button "PLUS" (2nd from l.t.r)
 			MINUS	: in std_logic;							-- button "MINUS" (1st from l.t.r)
 		
+			CLKO		: out std_logic;
 			MCLK 	: out std_logic;						-- master clock for I2S (25MHz)
 			SCLK	: out std_logic;						-- serial clock for I2S (3.125MHz)
             WS 		: out std_logic;						-- word select (48.8kHz)
@@ -99,6 +100,8 @@ begin
 	-- Test lines to visualise current state
 	LED(1, 1) <= S_STATE(0);
 	LED(1, 2) <= S_STATE(1);
+	
+	CLKO <= CLK;
 	
 
 	TRIA: entity work.triangle_ctrl		-- direct instantiation of component triangle generator

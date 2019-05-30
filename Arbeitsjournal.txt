@@ -76,12 +76,15 @@ Besprechung mit Maehne um FSM_MENU zu bereinigen (syntaktische und strukturelle
 Fehler behoben).
 
 ----------------------------------------------------------------------------------
-Mittwoch 28.5.19
+Mittwoch 29.5.19
 CS: Ziele vom 14.5.19 die erfüllt sind: 
 7 segement Ansteuerung, FSM_menu und debouncer direkt auf HW getestet.
 
 Implementierung von State Machine mit den States "PLAYING, RECORDING" etc fehlt noch.
 Implementierung von Anzeige Dot auf SSD fehlt noch.
 LED Matrix ansteuerung fehlt noch.
+
+----------------------------------------------------------------------------------
+Donnerstag 30.5.19 
 
 
