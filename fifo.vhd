@@ -40,7 +40,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity FIFO is
+entity fifo is
 
 generic(	ADDR_WIDTH					: positive	:= 10;
 					DATA_WIDTH					: positive	:= 16;
@@ -52,34 +52,36 @@ generic(	ADDR_WIDTH					: positive	:= 10;
 				data_out									:	out std_logic_vector(DATA_WIDTH-1 downto 0);
 				full, empty								:	out std_logic;
 				almost_full, almost_empty	:	out std_logic);
-end entity FIFO;
+end entity fifo;
 
 
 
 
-architecture rtl of FIFO is
+architecture rtl of fifo is
 	type	memory_type is array(0 to 2**ADDR_WIDTH-1)	--creating datatype for the memory
 		of	std_logic_vector(DATA_WIDTH-1 downto 0);
+	signal	mem	:	memory_type;	--create an instance of the memory
+	signal	head		:	natural range 0 to 2**ADDR_WIDTH-1;	--write pointer (head of the buffer, is ahead)
+	signal	tail		:	natural range 0 to 2**ADDR_WIDTH-1;	--read pointer (tail of the buffer)
+	signal	looped	:	boolean; --looped means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
+
+
 begin -- architecture rtl
 	process(clk)
 
-		constant 	fifo_depth 				:	positive := 2**ADDR_WIDTH;
-		constant	almost_full_num		:	positive	:= 768;
-		constant	almost_empty_num	:	positive	:= 256;
+		constant 	fifo_depth 				:	positive := 2**ADDR_WIDTH;		--number of words in the FIFO
+		constant	almost_full_num		:	positive	:= positive((real(fifo_depth)*ALMOST_FULL_RATIO));	--up to number of words FIFO is almost_empty
+		constant	almost_empty_num	:	positive	:= positive((real(fifo_depth)*ALMOST_EMPTY_RATIO));	--starting at this number of words upwards FIFO is almost_full
 
-		variable	mem			:	memory_type;	--create an instance of the memory
-	  variable	head		:	natural range 0 to 2**ADDR_WIDTH-1;	--write pointer (head of the buffer, is ahead)
-		variable	tail		:	natural range 0 to 2**ADDR_WIDTH-1;	--read pointer (tail of the buffer)
-		variable	looped	:	boolean;		--looped means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
 
 		begin
 			if rising_edge(clk) then
-				--set to inital conditions
-				if reset = '1' then
-					head := 0;
-					tail := 0;
 
-					looped := false;
+				if reset = '1' then --set to inital conditions
+					head <= 0;
+					tail <= 0;
+
+					looped <= false;
 
 					almost_full <= '0';
 					almost_empty <= '1';
@@ -93,10 +95,10 @@ begin -- architecture rtl
 							data_out <= mem(tail);
 							--Update read pointer
 							if tail = fifo_depth - 1 then
-								tail := 0;
-								looped := false;
+								tail <= 0;
+								looped <= false;
 							else
-								tail := tail + 1;
+								tail <= tail + 1;
 							end if;
 						end if;
 					end if;
@@ -104,13 +106,13 @@ begin -- architecture rtl
 					--write data into fifo buffer
 					if wr = '1' then
 						if looped = false or head /= tail then
-							mem(head) := data_in;
+							mem(head) <= data_in;
 							--update write pointer
 							if head = fifo_depth - 1 then
-								head := 0;
-								looped := true;
+								head <= 0;
+								looped <= true;
 							else
-								head := head + 1;
+								head <= head + 1;
 							end if;
 						end if;
 					end if;

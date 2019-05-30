@@ -40,12 +40,12 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity SER2PAR_SPI is
 
 	generic(	CLK_SCLK_RATIO	: integer:= 4;		-- number of clock periods per serial clock period. specs: CLK 50MHz, SCLK 12.5MHz, ratio: 4
-            BITWIDTHIN		: integer:= 16;		-- parallel data width
-            BITWIDTHOUT		: integer:= 16);	-- serial data width
+            BITWIDTHIN		: integer:= 16;			-- parallel data width
+            BITWIDTHOUT		: integer:= 16);		-- serial data width
 
-	port( CLK       : in std_logic;		-- system clock (50MHz)
-        SCLK      : out std_logic;   -- serial clock (12.5MHz)
-				RST       : in std_logic;		-- asynchronous active low reset
+	port( RST       : in std_logic;		-- asynchronous active low reset
+				CLK       : in std_logic;		-- system clock (50MHz)
+        SCLK      : out std_logic;	-- serial clock (12.5MHz)
 				DOUT      : out std_logic_vector(BITWIDTHIN-1 downto 0);
 				SDI    	  : in std_logic;
         CS        : out std_logic);
@@ -62,7 +62,6 @@ begin -- architecture rtl
 	-- Ouput signal match
 	SCLK <= S_SCLK;									-- output serial clock
 	CS <= S_CS;
-	--DOUT <= S_DATA;
 
 	-- Conversion from parallel to serial and expanding vector length from BITWIDTHIN to BITWIDTHOUT
 	CONVERSION: process (RST, CLK)
@@ -73,8 +72,11 @@ begin -- architecture rtl
 
 		if RST = '0' then							-- assume reset low-active
 			S_DATA <= (others => '0');	-- clear input shift register
-			sclk_cnt := 0;							-- clear serial clock counter
 			S_SCLK <= '1';							-- clear serial clock signal
+			S_CS <= '1';
+			sclk_cnt := 0;							-- clear serial clock counter
+			inbit_cnt := 0;							-- clear input bit counter
+			wait_cnt := 0;							-- clear wait counter
 
 
 		elsif CLK'event and CLK = '1' then				-- if not reset, wait for system clock raising edge
@@ -83,21 +85,25 @@ begin -- architecture rtl
 				sclk_cnt := sclk_cnt + 1;
 
 			else -- this else block is executed on every edge of SCLK
+				S_SCLK <= not S_SCLK;				-- toggle serial clock
+				sclk_cnt := 0;							-- reset master clock counter
 
-				--on positive edge of SCLK (test on zero because its toggled on the end of the process)
-				--hold CS on high for several cycles
+				-- on positive edge of SCLK (test on zero because its toggled on the end of the process)
+				-- hold CS on high for several cycles
 				if S_SCLK = '0' and S_CS = '1' then
-					if wait_cnt <2 then
+					if wait_cnt < 2 then
 						wait_cnt := wait_cnt + 1;
 					else
+						S_DATA <= (others => '0');	-- clear input shift register
 						wait_cnt := 0;
 						S_CS <= '0';
 					end if;
 				end if;
 
-				--clock in data
+				-- on positive edge of SCLK (test on zero because its toggled on the end of the process)
+				-- clock in data
 				if S_SCLK = '0' and S_CS = '0' then
-					if inbit_cnt < BITWIDTHIN then
+					if inbit_cnt < BITWIDTHIN-1 then
 						inbit_cnt := inbit_cnt + 1;
 						S_DATA <= S_DATA(BITWIDTHIN-2 downto 0) & SDI; --shift SDI into register
 					else 		--when the whole word is clocked in
@@ -106,13 +112,7 @@ begin -- architecture rtl
 						S_CS <= '1';
 					end if;
 				end if;
-
-
-				S_SCLK <= not S_SCLK;				-- toggle serial clock
-				sclk_cnt := 0;							-- reset master clock counter
 			end if;
-
-
 
 
     end if;
