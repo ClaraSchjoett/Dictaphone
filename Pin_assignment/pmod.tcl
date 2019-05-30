@@ -12,7 +12,7 @@ set_location_assignment PIN_B2 -to DOUT
 set_location_assignment PIN_G5 -to CS
 # set_location_assignment PIN_G4 -to <ENTITY_PORT_NAME_CONNECTED_TO_PMOD2_IO2>
 set_location_assignment PIN_G3 -to SDI
-set_location_assignment PIN_H2 -to SCLK
+set_location_assignment PIN_H2 -to SCLK_SPI
 # set_location_assignment PIN_H1 -to <ENTITY_PORT_NAME_CONNECTED_TO_PMOD2_IO7>
 # set_location_assignment PIN_J3 -to <ENTITY_PORT_NAME_CONNECTED_TO_PMOD2_IO8>
 # set_location_assignment PIN_J2 -to <ENTITY_PORT_NAME_CONNECTED_TO_PMOD2_IO9>
