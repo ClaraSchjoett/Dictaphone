@@ -77,7 +77,7 @@ end DICT_WRAP;
 
 architecture str of DICT_WRAP is
 
-	signal S_DATA 	: std_logic_vector(7 downto 0);
+	signal S_DATA 	: std_logic_vector(15 downto 0);
 	signal S_PLAY	: std_logic;
 	signal S_DLT	: std_logic;
 	signal S_RCRD	: std_logic;
@@ -91,8 +91,6 @@ architecture str of DICT_WRAP is
 	signal S_NPLUS	: std_logic;
 	signal S_NMINUS	: std_logic;
 	signal S_STATE	: std_logic_vector(1 downto 0);
-
-  signal S_DIN    : std_logic_vector(15 downto 0);
 
 begin
 
@@ -111,13 +109,7 @@ begin
 	CLKO <= CLK;
 
 
-	TRIA: entity work.triangle_ctrl		-- direct instantiation of component triangle generator
-		port map(
-					clk 	=> CLK,
-					rst 	=> RST,
-					speed_n => SW(2 downto 1),
-					data_ack=> SW(0),
-					data 	=> S_DATA);
+
 
 	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
 		port map(	CLK 	=> CLK,
@@ -183,8 +175,8 @@ begin
     port map(
           clk 	=> CLK,
           rst 	=> RST,
-          audioDataL => S_DIN,
-          audioDataR => S_DIN,
+          audioDataL => S_DATA,
+          audioDataR => S_DATA,
           audioLevelLedR(0) => LED(10,1),
           audioLevelLedR(1) => LED(10,2),
           audioLevelLedR(2) => LED(10,3),
@@ -202,7 +194,7 @@ begin
     port map(	CLK 	=> CLK,
           RST 	=> RST,
           SCLK 	=> SCLK_SPI,
-          DOUT 	=> S_DIN,
+          DOUT 	=> S_DATA,
           SDI => SDI,
           CS => CS);
 
