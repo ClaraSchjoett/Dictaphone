@@ -15,7 +15,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  	:
 -- Date        		Version		Author		Description
--- 2019-06-01		1.0			Peter		Created
+-- 2019-06-01		1.0			Clara		Created
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- clk				Audio sampling rate
@@ -69,28 +69,27 @@ BEGIN
 	-- Instantiate the Device Under Test (DUT)
 	DUT: entity work.fifo
 		PORT MAP (
-			clk		=> clk,
-			reset	=> reset,
-			data_in	=> data_in,
-			wr		=> wr,
-			rd		=> rd,
-			data_out=> data_out,
-			full	=> full,
-			empty	=> empty,
-			almost_empty => almost_empty,
-			almost_full  => almost_full
+			clk			=> clk,
+			reset		=> reset,
+			data_in		=> data_in,
+			wr			=> wr,
+			rd			=> rd,
+			data_out	=> data_out,
+			full		=> full,
+			empty		=> empty,
+			almost_empty=> almost_empty,
+			almost_full => almost_full
 		);
 	
 	
 	
 	-- clock and reset generation
-	clk <= not clk after 0.5 * CLK_PERIOD when not tests_done else
-				'0';
+	clk <= not clk after 0.5 * CLK_PERIOD when not tests_done else '0';
 	reset <= 	'1', 
 				'0' after 0.25 * CLK_PERIOD,
 				'1' after 1.75 * CLK_PERIOD;
 	
-	-- Write and successively read process
+	-- Stimuli generation: Write and successively read process
 	STIM : process
 		variable counter : unsigned (DATA_WIDTH-1 downto 0) := (others => '0');
 	begin		
@@ -121,5 +120,10 @@ BEGIN
 		
 		wait;
 	end process STIM;
+	
+	-- Monitoring and checks
+	-- CHK: process
+	-- begin
+	-- end process CHK;
 	
 END;

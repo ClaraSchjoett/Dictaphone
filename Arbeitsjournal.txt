@@ -67,7 +67,7 @@ FIFO testbench (CS)
 ----------------------------------------------------------------------------------
 Mittwoch 15.5.19
 
-
+Zeitplan updatiert, aktuelle Version V0.2
 ----------------------------------------------------------------------------------
 Dienstag 28.5.19
 CS: BCD2SSD geschrieben, Konversion von 2 binärcodierte Zahlen (0 bis 16) für die
@@ -86,5 +86,11 @@ LED Matrix ansteuerung fehlt noch.
 
 ----------------------------------------------------------------------------------
 Donnerstag 30.5.19 
+Path Mic-Audio jack realisiert. Funktioniert!
+
+----------------------------------------------------------------------------------
+Samstag 1.6.19
+Path Mic-FIFO-Audio jack realiisert. Funktioniert!
+FIFO testbench begonnen, assert und automatischen Datenvergleich muss noch implementiert werden.
 
 
