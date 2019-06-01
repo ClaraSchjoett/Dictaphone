@@ -1,3 +1,37 @@
+-------------------------------------------------------------------------------
+-- Title      	: 	fifo_tb
+-- Project    	: 	Dictaphone
+-------------------------------------------------------------------------------
+-- File       	: 	fifo_tb.vhd
+-- Author     	: 	Clara Schjoett
+-- Company    	: 	BFH
+-- Created    	: 	2019-06-01
+-- Last update	: 	2019
+-- Platform   	: 	Xilinx ISE 14.7
+-- Standard   	: 	VHDL'93/02, Math Packages
+-- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
+-------------------------------------------------------------------------------
+-- Description	: 	Testbench for standard FIFO-Buffer
+-------------------------------------------------------------------------------
+-- Revisions  	:
+-- Date        		Version		Author		Description
+-- 2019-06-01		1.0			Peter		Created
+-------------------------------------------------------------------------------
+-- Inputs		:
+-- clk				Audio sampling rate
+-- reset			Resets the internal pointers and sets data to zero
+-- data_in			Input Data
+-- wr				write input: if wr is high, data_in is written on positive edge of clk
+-- rs				read input: if rd is high, data appears on data_out on positive edge of clk
+--
+-- Outputs		:
+-- data_out			Output Data
+-- full				is high if fifo-buffer is full
+-- empty			is high if fifo-buffer is empty
+-- almost_full		is high if fifo-buffer is more than 75% full
+-- almost_empty		is high if fifo-buffer is less than 25% full
+-------------------------------------------------------------------------------
+
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
@@ -7,135 +41,85 @@ END fifo_tb;
 
 ARCHITECTURE behavior OF fifo_tb IS 
 	
-	-- Component Declaration for the Unit Under Test (UUT)
-	component STD_FIFO
-		Generic (
-			constant ADDR_WIDTH
-			constant DATA_WIDTH  : positive := 8;
-			constant FIFO_DEPTH	: positive := 16
-		);
-		port (
-			CLK		: in std_logic;
-			RST		: in std_logic;
-			DataIn	: in std_logic_vector(7 downto 0);
-			WriteEn	: in std_logic;
-			ReadEn	: in std_logic;
-			DataOut	: out std_logic_vector(7 downto 0);
-			Full	: out std_logic;
-			Empty	: out std_logic
-		);
-	end component;
+	constant ADDR_WIDTH		: positive 		:= 10;
+	constant DATA_WIDTH  	: positive 		:= 16;
 	
 	--Inputs
-	signal CLK		: std_logic := '0';
-	signal RST		: std_logic := '0';
-	signal DataIn	: std_logic_vector(7 downto 0) := (others => '0');
-	signal ReadEn	: std_logic := '0';
-	signal WriteEn	: std_logic := '0';
+	signal clk			: std_logic := '0';
+	signal reset		: std_logic := '1';
+	signal data_in		: std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+	signal rd			: std_logic := '0';
+	signal wr			: std_logic := '0';
 	
 	--Outputs
-	signal DataOut	: std_logic_vector(7 downto 0);
-	signal Empty	: std_logic;
-	signal Full		: std_logic;
+	signal data_out		: std_logic_vector(DATA_WIDTH-1 downto 0);
+	signal empty		: std_logic;
+	signal full			: std_logic;
+	signal almost_empty	: std_logic;
+	signal almost_full	: std_logic;
 	
 	-- Clock period definitions
-	constant CLK_period : time := 10 ns;
+	constant CLK_PERIOD : time := 20 ns;
+	
+	-- testbench signals
+	signal tests_done	: boolean := false;
 
 BEGIN
 
-	-- Instantiate the Unit Under Test (UUT)
-	uut: STD_FIFO
+	-- Instantiate the Device Under Test (DUT)
+	DUT: entity work.fifo
 		PORT MAP (
-			CLK		=> CLK,
-			RST		=> RST,
-			DataIn	=> DataIn,
-			WriteEn	=> WriteEn,
-			ReadEn	=> ReadEn,
-			DataOut	=> DataOut,
-			Full	=> Full,
-			Empty	=> Empty
+			clk		=> clk,
+			reset	=> reset,
+			data_in	=> data_in,
+			wr		=> wr,
+			rd		=> rd,
+			data_out=> data_out,
+			full	=> full,
+			empty	=> empty,
+			almost_empty => almost_empty,
+			almost_full  => almost_full
 		);
 	
-	-- Clock process definitions
-	CLK_process :process
-	begin
-		CLK <= '0';
-		wait for CLK_period/2;
-		CLK <= '1';
-		wait for CLK_period/2;
-	end process;
 	
-	-- Reset process
-	rst_proc : process
-	begin
-	wait for CLK_period * 5;
-		
-		RST <= '1';
-		
-		wait for CLK_period * 5;
-		
-		RST <= '0';
-		
-		wait;
-	end process;
 	
-	-- Write process
-	wr_proc : process
-		variable counter : unsigned (7 downto 0) := (others => '0');
+	-- clock and reset generation
+	clk <= not clk after 0.5 * CLK_PERIOD when not tests_done else
+				'0';
+	reset <= 	'1', 
+				'0' after 0.25 * CLK_PERIOD,
+				'1' after 1.75 * CLK_PERIOD;
+	
+	-- Write and successively read process
+	STIM : process
+		variable counter : unsigned (DATA_WIDTH-1 downto 0) := (others => '0');
 	begin		
-		wait for CLK_period * 20;
+		wait for CLK_PERIOD * 20;
 
-		for i in 1 to 32 loop
-			counter := counter + 1;
-			
-			DataIn <= std_logic_vector(counter);
-			
-			wait for CLK_period * 1;
-			
-			WriteEn <= '1';
-			
-			wait for CLK_period * 1;
+		wr <= '1';
 		
-			WriteEn <= '0';
-		end loop;
+		for i in 1 to 1050 loop
+			counter := counter + 1;		
+			data_in <= std_logic_vector(counter);		
+			wait for CLK_PERIOD * 1;		
+		end loop;		
 		
-		wait for clk_period * 20;
+		wait for CLK_PERIOD * 20;
 		
-		for i in 1 to 32 loop
-			counter := counter + 1;
-			
-			DataIn <= std_logic_vector(counter);
-			
-			wait for CLK_period * 1;
-			
-			WriteEn <= '1';
-			
-			wait for CLK_period * 1;
-			
-			WriteEn <= '0';
-		end loop;
+		wr <= '0';
+		rd <= '1';
+		
+		for k in 1 to 1050 loop
+			rd <= '1';
+			wait for CLK_PERIOD * 1;
+		end loop;	
+		
+		wait for CLK_PERIOD * 40;
+
+		
+		tests_done <= true;
 		
 		wait;
-	end process;
+	end process STIM;
 	
-	-- Read process
-	rd_proc : process
-	begin
-		wait for CLK_period * 20;
-		
-		wait for CLK_period * 40;
-			
-		ReadEn <= '1';
-		
-		wait for CLK_period * 60;
-		
-		ReadEn <= '0';
-		
-		wait for CLK_period * 256 * 2;
-		
-		ReadEn <= '1';
-		
-		wait;
-	end process;
-
 END;

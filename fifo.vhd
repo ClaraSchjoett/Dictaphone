@@ -84,12 +84,12 @@ begin -- architecture rtl
 					full <= '0';
 					empty <= '1';
 					
-				-- if not reset, check for read or write input signals
+				-- if not reset, check for read and write input signals
 				else				
 					--read data out of fifo buffer
 					if rd = '1' then
 						if looped = true or head /= tail then
-							data_out <= mem(tail);
+							data_out <= mem(tail);		-- Read data at pointer tail
 							--Update read pointer
 							if tail = fifo_depth - 1 then
 								tail <= 0;
@@ -103,7 +103,7 @@ begin -- architecture rtl
 					--write data into fifo buffer
 					if wr = '1' then
 						if looped = false or head /= tail then
-							mem(head) <= data_in;
+							mem(head) <= data_in;		-- Write data at pointer head
 							--update write pointer
 							if head = fifo_depth - 1 then
 								head <= 0;
@@ -129,7 +129,7 @@ begin -- architecture rtl
 				end if;
 
 				-- Update Flags almost_empty and almost_full
-				if looped then
+				if not looped then
 					if (head - tail) >= (almost_full_num) then
 						almost_full <= '1';
 					else
