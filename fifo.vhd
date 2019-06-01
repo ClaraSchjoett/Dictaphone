@@ -9,7 +9,7 @@
 -- Last update	: 	2019
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
--- Sources			:		http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
+-- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
 --
 -------------------------------------------------------------------------------
 -- Description	: 	Standard FIFO-Buffer
@@ -17,24 +17,23 @@
 
 -------------------------------------------------------------------------------
 -- Revisions  	:
--- Date        	Version		Author	Description
--- 2019-05-20		1.0				Peter		Created
+-- Date        		Version		Author	Description
+-- 2019-05-20		1.0			Peter	Created
+-- 2019-06-01		1.1			Clara	Reset changed to low-active, improved formatting, more comments
 -------------------------------------------------------------------------------
 -- Inputs		:
--- clk					Audio sampling rate
--- reset				Resets the internal pointers and sets data to zero
+-- clk				Audio sampling rate
+-- reset			Resets the internal pointers and sets data to zero
 -- data_in			Input Data
--- wr						write input: if wr is high, data_in is written on positive edge
---							of clk
--- rs						read input: if rd is high, data appears on data_out
---							on positive edge of clk
+-- wr				write input: if wr is high, data_in is written on positive edge of clk
+-- rs				read input: if rd is high, data appears on data_out on positive edge of clk
 --
--- Outputs	:
+-- Outputs		:
 -- data_out			Output Data
--- full					is high if fifo-buffer is full
--- empty				is high if fifo-buffer is empty
--- almost_full	is high if fifo-buffer is more than 75% full
--- almost_empty	is high if fifo-buffer is less than 25% full
+-- full				is high if fifo-buffer is full
+-- empty			is high if fifo-buffer is empty
+-- almost_full		is high if fifo-buffer is more than 75% full
+-- almost_empty		is high if fifo-buffer is less than 25% full
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -42,34 +41,31 @@ use ieee.std_logic_1164.all;
 
 entity fifo is
 
-generic(	ADDR_WIDTH					: positive	:= 10;
-					DATA_WIDTH					: positive	:= 16;
-					ALMOST_FULL_RATIO		:	real			:= 0.75;
-					ALMOST_EMPTY_RATIO	:	real			:= 0.25);
+	generic(	ADDR_WIDTH					: 	positive		:= 10;
+				DATA_WIDTH					: 	positive		:= 16;
+				ALMOST_FULL_RATIO			: 	real			:= 0.75;
+				ALMOST_EMPTY_RATIO			: 	real			:= 0.25);
 
-	port( clk, reset, wr, rd				:	in std_logic;
-				data_in										:	in std_logic_vector(DATA_WIDTH-1 downto 0);
-				data_out									:	out std_logic_vector(DATA_WIDTH-1 downto 0);
-				full, empty								:	out std_logic;
+	port( 		clk, reset, wr, rd			:	in std_logic;
+				data_in						:	in std_logic_vector(DATA_WIDTH-1 downto 0);
+				data_out					:	out std_logic_vector(DATA_WIDTH-1 downto 0);
+				full, empty					:	out std_logic;
 				almost_full, almost_empty	:	out std_logic);
 end entity fifo;
 
-
-
-
 architecture rtl of fifo is
-	type	memory_type is array(0 to 2**ADDR_WIDTH-1)	--creating datatype for the memory
-		of	std_logic_vector(DATA_WIDTH-1 downto 0);
-	signal	mem	:	memory_type;	--create an instance of the memory
-	signal	head		:	natural range 0 to 2**ADDR_WIDTH-1;	--write pointer (head of the buffer, is ahead)
-	signal	tail		:	natural range 0 to 2**ADDR_WIDTH-1;	--read pointer (tail of the buffer)
-	signal	looped	:	boolean; --looped means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
+	type		memory_type is array(0 to 2**ADDR_WIDTH-1)				--creating datatype for the memory, which is a two-dimensional array 1024x16
+				of	std_logic_vector(DATA_WIDTH-1 downto 0);			
+	signal		mem			:	memory_type;							--create an instance of the memory
+	signal		head		:	natural range 0 to 2**ADDR_WIDTH-1;		--write pointer (head of the buffer, is ahead), range from 0 to 1023
+	signal		tail		:	natural range 0 to 2**ADDR_WIDTH-1;		--read pointer (tail of the buffer), range from 0 to 1023
+	signal		looped		:	boolean; 								--looped means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
 
 
 begin -- architecture rtl
 	process(clk)
 
-		constant 	fifo_depth 				:	positive := 2**ADDR_WIDTH;		--number of words in the FIFO
+		constant 	fifo_depth 			:	positive 	:= 2**ADDR_WIDTH;		--number of words in the FIFO
 		constant	almost_full_num		:	positive	:= positive((real(fifo_depth)*ALMOST_FULL_RATIO));	--up to number of words FIFO is almost_empty
 		constant	almost_empty_num	:	positive	:= positive((real(fifo_depth)*ALMOST_EMPTY_RATIO));	--starting at this number of words upwards FIFO is almost_full
 
@@ -77,7 +73,7 @@ begin -- architecture rtl
 		begin
 			if rising_edge(clk) then
 
-				if reset = '1' then --set to inital conditions
+				if reset = '0' then --set to inital conditions
 					head <= 0;
 					tail <= 0;
 
@@ -87,8 +83,9 @@ begin -- architecture rtl
 					almost_empty <= '1';
 					full <= '0';
 					empty <= '1';
-
-				else
+					
+				-- if not reset, check for read or write input signals
+				else				
 					--read data out of fifo buffer
 					if rd = '1' then
 						if looped = true or head /= tail then
