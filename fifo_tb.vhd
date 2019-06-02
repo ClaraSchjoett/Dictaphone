@@ -62,6 +62,7 @@ ARCHITECTURE behavior OF fifo_tb IS
 	signal full				: std_logic;
 	signal almost_empty		: std_logic;
 	signal almost_full		: std_logic;
+	signal imp				: std_logic;
 	
 	-- Clock period and other time definitions
 	constant CLK_PERIOD 	: time := 20 ns;
@@ -71,8 +72,6 @@ ARCHITECTURE behavior OF fifo_tb IS
 	signal read_write_done	: boolean := false;
 
 BEGIN
-
-	-- TODO: instantiate strobe_gen to generate read/write signals to write and read in desired rates according to requirements
 	-- Instantiate the Device Under Test (DUT)
 	DUT: entity work.fifo
 		PORT MAP (
@@ -88,8 +87,15 @@ BEGIN
 			almost_full => almost_full
 		);
 	
-	
-	
+	-- Instantiate strobe generator for read/write signals
+	STR: entity work.strobe_gen(rtl)
+		generic map(
+			INTERVAL	=> 4)
+		port map(
+			CLK			=> clk,
+			RST			=> reset,
+			IMP			=> imp);
+		
 	-- clock and reset generation
 	clk <= 		not clk after 0.5 * CLK_PERIOD when not tests_done else 
 				'0';
@@ -103,8 +109,7 @@ BEGIN
 		-- Stimuli generation: Write and successively read process
 		STIM : process
 			--variable counter : unsigned (DATA_WIDTH-1 downto 0) := (others => '0');
-			
-			
+				
 			-- File and line buffer declaration
 			file dataIn			: text;
 			file dataOut 		: text;
@@ -132,7 +137,7 @@ BEGIN
 				wait for CLK_PERIOD * 1;
 				if data_out /= "UUUUUUUUUUUUUUUU" then
 					write(line_out, data_out); 				-- Write data in FIFO to line_out
-					writeline(dataOut, line_out);			-- Write line_out to text file "dataOut.txt"
+					writeline(dataOut, line_out);			-- Write line_out to text file "data_out.txt"
 				end if;
 				
 			end loop;
