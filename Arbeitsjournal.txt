@@ -86,11 +86,21 @@ LED Matrix ansteuerung fehlt noch.
 
 ----------------------------------------------------------------------------------
 Donnerstag 30.5.19 
-Path Mic-Audio jack realisiert. Funktioniert!
+PW|CS: Path Mic-Audio jack realisiert. Funktioniert!
 
 ----------------------------------------------------------------------------------
 Samstag 1.6.19
-Path Mic-FIFO-Audio jack realiisert. Funktioniert!
+PW|CS: Path Mic-FIFO-Audio jack realiisert. Funktioniert!
 FIFO testbench begonnen, assert und automatischen Datenvergleich muss noch implementiert werden.
+----------------------------------------------------------------------------------
+Sonntag 2.6.19
+CS: FIFO testbench, Lesen und Schreiben von/in zwei versch. Text Dateien implementiert.
+Assert in einer Procedure implementiert, die Fehler müssen noch in ein Error Log geschrieben werden.
+Der Code enhält noch Fehler, die ich alleine nicht beheben kann:
+1) Simulation hält plötzlich an
+2) Lesen outside of file Error
+3) Zwei processes sequentiell ausführen - wie?
+
+----------------------------------------------------------------------------------
 
 
