@@ -156,11 +156,15 @@ BEGIN
 		-- Monitoring and checks
 		CHK: process
 		
+			-- TODO: how to write report into error log??
+			
 			-- File and line buffer declaration
 			file dataIn				: text;
 			file dataOut 			: text;
+			file errorLog			: text;
 			variable line_in		: line;
 			variable line_out		: line;
+			variable error_line		: line;
 			variable PLACEHOLDER1	: std_logic_vector(0 to DATA_WIDTH-1);
 			variable PLACEHOLDER2	: std_logic_vector(0 to DATA_WIDTH-1);
 			
