@@ -88,10 +88,25 @@ begin -- architecture rtl
 				end if;
 			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
 				-- TODO
+				if RCRD = '1' then 
+					state_next <= RECORDING;
+				elsif DLT = '1' then
+					state_next <= DELETING;
+				end if;
 			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
 				-- TODO
+				if PLAY = '1' then
+					state_next <= PLAYING;
+				elsif DLT = '1' then
+					state_next <= DELETING;
+				end if;
 			when DELETING =>								-- when the state is DELETING, the condition for it to change TODO
 				-- TODO
+				if PLAY = '1' then
+					state_next <= PLAYING;
+				elsif RCRD = '1' then 
+					state_next <= RECORDING;
+				end if;
 			when others => null;
 		end case;
 	end process NSL;

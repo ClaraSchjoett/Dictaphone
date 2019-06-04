@@ -28,6 +28,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
 -- Own packages
 use work.gecko4_education_pkg.all;
 
@@ -61,11 +63,11 @@ begin -- architecture rtl
 	-- Type: Sequential
 	REG: process(CLK, RST) is
 	begin -- process REG
-		if reset = '0' then						-- Asynchronous low active reset sets all registers (except for edge_pos_reg) to zero
+		if RST = '0' then						-- Asynchronous low active reset sets all registers (except for edge_pos_reg) to zero
 			tenths_reg 	<= (others => '0');
 			ones_reg 	<= (others => '0');
 			tens_reg 	<= (others => '0');
-		elsif rising_edge(clock) then			-- Clock in values into registers
+		elsif rising_edge(CLK) then			-- Clock in values into registers
 			tenths_reg 	<= tenths_next;
 			ones_reg 	<= ones_next;
 			tens_reg 	<= tens_next;
@@ -79,9 +81,9 @@ begin -- architecture rtl
 		tens_next	<= tens_reg;
 
 		case STATE is 
-			when "01" or "10" =>				-- PLAYING or RECORDING	
+			when "01" | "10" =>				-- PLAYING or RECORDING	
 				if impulse = '1' then
-					tenths_next <= tenths_reg + 1;
+					tenths_next <= tenths_reg + '1';
 					if tenths_reg = 9 then
 						ones_next <= ones_reg + 1;
 						tenths_next <= (others => '0');
@@ -101,14 +103,14 @@ begin -- architecture rtl
 	
 	-- Evaluate current value of tenths, ones and tens and write to LED matrix
 	-- Type: Combinational
-	OL : process (tenths, ones, tens) is	
+	OL : process (tenths_reg, ones_reg, tens_reg) is	
 	begin  -- process OL
 	
 		-- LEDs are off by default
 		LED <= (others => (others => '0'));
 		
 		-- MUX for digit tenths 
-		case (tenths) is
+		case (tenths_reg) is
 			when "0000" => 		-- 0
 				LED(1,11)  <= '1';
 				LED(2,10)  <= '1';
@@ -228,7 +230,7 @@ begin -- architecture rtl
 		end case;	 
 			
 		-- MUX for digit ones
-		case (ones) is
+		case (ones_reg) is
 			when "0000" => 		-- 0
 				LED(1,5)   <= '1';
 				LED(2,4)   <= '1';
@@ -348,7 +350,7 @@ begin -- architecture rtl
 		end case;
 		
 		-- MUX for digit tens
-		case (tens) is
+		case (tens_reg) is
 			when "0000" => 		-- 0
 				LED(1,2)   <= '1';
 				LED(2,1)   <= '1';
