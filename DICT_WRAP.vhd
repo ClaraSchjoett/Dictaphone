@@ -91,11 +91,11 @@ architecture str of DICT_WRAP is
 	signal S_MINUS	: std_logic;
 	signal S_BCD	: std_logic_vector(9 downto 0);
 
-	signal S_NPLAY	: std_logic;
-	signal S_NDLT	: std_logic;
-	signal S_NRCRD	: std_logic;
-	signal S_NPLUS	: std_logic;
-	signal S_NMINUS	: std_logic;
+	signal S_DPLAY	: std_logic;
+	signal S_DDLT	: std_logic;
+	signal S_DRCRD	: std_logic;
+	signal S_DPLUS	: std_logic;
+	signal S_DMINUS	: std_logic;
 	signal S_STATE	: std_logic_vector(1 downto 0);
 
 begin
@@ -131,44 +131,44 @@ begin
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLAY,
-					O		=> S_NPLAY);
+					O		=> S_DPLAY);
 
 	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_DLT,
-					O		=> S_NDLT);
+					O		=> S_DDLT);
 
 	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_RCRD,
-					O		=> S_NRCRD);
+					O		=> S_DRCRD);
 
 	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLUS,
-					O		=> S_NPLUS);
+					O		=> S_DPLUS);
 
 	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_MINUS,
-					O		=> S_NMINUS);
+					O		=> S_DMINUS);
 
 	MENU: entity work.FSM_MENU			-- direct instantiation of component FSM_MENU, the menu control
 		port map(	CLK 	=> CLK,
 					RST 	=> RST,
-					PLAY 	=> S_NPLAY,
-					DLT 	=> S_NDLT,
-					RCRD	=> S_NRCRD,
-					PLUS 	=> S_NPLUS,
-					MINUS	=> S_NMINUS,
+					PLAY 	=> S_DPLAY,
+					DLT 	=> S_DDLT,
+					RCRD	=> S_DRCRD,
+					PLUS 	=> S_DPLUS,
+					MINUS	=> S_DMINUS,
 					STATE	=> S_STATE,
 					BCD		=> S_BCD);
 
@@ -291,11 +291,11 @@ architecture str of DICT_WRAP is
 	signal S_MINUS	: std_logic;
 	signal S_BCD	: std_logic_vector(9 downto 0);
 
-	signal S_NPLAY	: std_logic;
-	signal S_NDLT	: std_logic;
-	signal S_NRCRD	: std_logic;
-	signal S_NPLUS	: std_logic;
-	signal S_NMINUS	: std_logic;
+	signal S_DPLAY	: std_logic;
+	signal S_DDLT	: std_logic;
+	signal S_DRCRD	: std_logic;
+	signal S_DPLUS	: std_logic;
+	signal S_DMINUS	: std_logic;
 	signal S_STATE	: std_logic_vector(1 downto 0);
 
 begin
@@ -331,44 +331,44 @@ begin
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLAY,
-					O		=> S_NPLAY);
+					O		=> S_DPLAY);
 
 	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_DLT,
-					O		=> S_NDLT);
+					O		=> S_DDLT);
 
 	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_RCRD,
-					O		=> S_NRCRD);
+					O		=> S_DRCRD);
 
 	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLUS,
-					O		=> S_NPLUS);
+					O		=> S_DPLUS);
 
 	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
 	port map(
 					CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_MINUS,
-					O		=> S_NMINUS);
+					O		=> S_DMINUS);
 
 	MENU: entity work.FSM_MENU			-- direct instantiation of component FSM_MENU, the menu control
 		port map(	CLK 	=> CLK,
 					RST 	=> RST,
-					PLAY 	=> S_NPLAY,
-					DLT 	=> S_NDLT,
-					RCRD	=> S_NRCRD,
-					PLUS 	=> S_NPLUS,
-					MINUS	=> S_NMINUS,
+					PLAY 	=> S_DPLAY,
+					DLT 	=> S_DDLT,
+					RCRD	=> S_DRCRD,
+					PLUS 	=> S_DPLUS,
+					MINUS	=> S_DMINUS,
 					STATE	=> S_STATE,
 					BCD		=> S_BCD);
 
