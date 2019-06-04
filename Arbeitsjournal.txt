@@ -102,5 +102,9 @@ Der Code enhält noch Fehler, die ich alleine nicht beheben kann:
 3) Zwei processes sequentiell ausführen - wie?
 
 ----------------------------------------------------------------------------------
+Dienstag 4.6.19
 
+CS: Nach Besprechung mit Maehne: FIFO testbench, zwei sep. processes für read and write. Eins für 
+check. Strobe generator ist überflüssig, das gleiche können wir mir wait statements realisieren.
+Schreiben in ein error log ist keine anforderung, das können wir weglassen. Wird daher nicht implementiert.
 

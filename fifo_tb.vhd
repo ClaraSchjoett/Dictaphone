@@ -69,7 +69,8 @@ ARCHITECTURE behavior OF fifo_tb IS
 	
 	-- testbench signals
 	signal tests_done		: boolean := false;
-	signal read_write_done	: boolean := false;
+	signal write_done		: boolean := false;
+	signal read_done		: boolean := false;
 
 BEGIN
 	-- Instantiate the Device Under Test (DUT)
@@ -87,14 +88,14 @@ BEGIN
 			almost_full => almost_full
 		);
 	
-	-- Instantiate strobe generator for read/write signals
-	STR: entity work.strobe_gen(rtl)
-		generic map(
-			INTERVAL	=> 4)
-		port map(
-			CLK			=> clk,
-			RST			=> reset,
-			IMP			=> imp);
+	-- -- Instantiate strobe generator for read/write signals
+	-- STR: entity work.strobe_gen(rtl)
+		-- generic map(
+			-- INTERVAL	=> 4)
+		-- port map(
+			-- CLK			=> clk,
+			-- RST			=> reset,
+			-- IMP			=> imp);
 		
 	-- clock and reset generation
 	clk <= 		not clk after 0.5 * CLK_PERIOD when not tests_done else 
@@ -102,43 +103,122 @@ BEGIN
 	reset <= 	'1', 
 				'0' after 0.25 * CLK_PERIOD,
 				'1' after 1.75 * CLK_PERIOD;
-	-- testbench process, encapsules stimuli generation process and check results process
-	-- TB: process
-	-- begin
 	
-		-- Stimuli generation: Write and successively read process
-		STIM : process
-			--variable counter : unsigned (DATA_WIDTH-1 downto 0) := (others => '0');
-				
-			-- File and line buffer declaration
-			file dataIn			: text;
-			file dataOut 		: text;
-			variable line_in	: line;
-			variable line_out	: line;
-			variable bit_width 	: std_logic_vector(0 to DATA_WIDTH-1);
+	-- Stimuli generation: Write into FIFO
+	WRITE_PROC : process		
+		-- File and line buffer declaration
+		file dataIn			: text;
+		variable line_in	: line;
+		variable read_data 	: std_logic_vector(DATA_WIDTH-1 downto 0);	--(0 to DATA_WIDTH-1);	
+	begin		
+		
+		--wait for CLK_PERIOD * 5;
+		--wr <= '1';
+		--rd <= '1';
+		
+		-- Open source text file
+		file_open(dataIn, "data_in.txt", read_mode);	-- dataIn is the file handle for the text file containing test data
+		--wait for CLK_PERIOD * 1;						-- Uncomment to provoke a report from assertion in process CHK.
+		
+		-- Problem to resolve: loop stops at last entry in dataIn. Which means last entries in dataOut are missing.
+		while not full loop 							-- line number is looped automatically
+		
+			readline(dataIn, line_in); 					-- paramenter: file handle, line number (iterated automatically)
+			read(line_in, read_data);					
+			wait until rising_edge(CLK)
+				wr <= '1';
+				data_in <= read_data;					-- Write data to FIFO
+			wait until rising_edge(CLK)
+				wr <= '0';
+			wait until rising_edge(CLK)
+				wr <= '0';
 			
-		begin		
+		end loop;
+		
+		-- Close source and destination text files (good practice to close files after use!)
+		file_close(dataIn);
+		file_close(dataOut);
+		
+		wait for CLK_PERIOD * 20;
+		
+		write_done <= true;
+		
+		wait;
+	end process WRITE_PROC;
+	
+	-- Stimuli generation: Read out of FIFO
+	READ_PROC: process
+		-- File and line buffer declaration
+		file dataOut 		: text;
+		variable line_out	: line;
+	begin
+		-- Open destination text file
+		file_open(dataOut,"data_out.txt", write_mode);	-- dataOut is the file handle for the text file where FIFO data is written to
+	
+		-- Problem to resolve: loop stops at last entry in dataIn. Which means last entries in dataOut are missing.
+		while not endfile(dataIn) loop 					-- line number is looped automatically
+		
+			readline(dataIn, line_in); 					-- paramenter: file handle, line number (iterated automatically)
+			read(line_in, read_data);					-- tell how many characters to read (16 in this case)
+			data_in <= read_data;						-- Write data to FIFO
+			wait for CLK_PERIOD * 1;
+			if data_out /= "UUUUUUUUUUUUUUUU" then
+				write(line_out, data_out); 				-- Write data in FIFO to line_out
+				writeline(dataOut, line_out);			-- Write line_out to text file "data_out.txt"
+			end if;
 			
-			wait for CLK_PERIOD * 5;
-			wr <= '1';
-			rd <= '1';
-			
+		end loop;
+	
+	
+	end process READ_PROC;
+	
+	-- Monitoring and checks
+	CHK: process
+	
+		-- TODO: how to write report into error log??
+		
+		-- File and line buffer declaration
+		file dataIn				: text;
+		file dataOut 			: text;
+		--file errorLog			: text;
+		variable line_in		: line;
+		variable line_out		: line;
+		--variable error_line		: line;
+		variable PLACEHOLDER1	: std_logic_vector(0 to DATA_WIDTH-1);
+		variable PLACEHOLDER2	: std_logic_vector(0 to DATA_WIDTH-1);
+		
+		-- Procedure compare used in this process to compare assumed identical lines from dataIn and dataOut
+		procedure compare(	variable din : inout std_logic_vector; 
+							variable dout: inout std_logic_vector) is
+		begin
+			-- TODO: write report to log file
+			assert  din = dout
+			report "Data discrepancy: Data in " & integer'image(to_integer(unsigned(din))) 
+			& " is not consistent with data out " & integer'image(to_integer(unsigned(dout)))
+			severity error;
+		end procedure compare;
+		
+	begin
+	
+		-- Pseudo decription: read same line in dataIn and dataOut. Compare the read values. If they are not identical, report an error using assert.
+		wait until write_done and read_done = true;
 			-- Open source and destination text files
 			file_open(dataIn, "data_in.txt", read_mode);	-- dataIn is the file handle for the text file containing test data
-			file_open(dataOut,"data_out.txt", write_mode);	-- dataOut is the file handle for the text file where FIFO data is written to
-			--wait for CLK_PERIOD * 1;						-- Uncomment to provoke a report from assertion in process CHK.
+			file_open(dataOut,"data_out.txt", read_mode);	-- dataOut is the file handle for the text file where FIFO data was written to
 			
-			-- Problem to resolve: loop stops at last entry in dataIn. Which means last entries in dataOut are missing.
+			
 			while not endfile(dataIn) loop 					-- line number is looped automatically
-			
-				readline(dataIn, line_in); 					-- paramenter: file handle, line number (iterated automatically)
-				read(line_in, bit_width);					-- tell how many characters to read (16 in this case)
-				data_in <= bit_width;						-- Write data to FIFO
-				wait for CLK_PERIOD * 1;
-				if data_out /= "UUUUUUUUUUUUUUUU" then
-					write(line_out, data_out); 				-- Write data in FIFO to line_out
-					writeline(dataOut, line_out);			-- Write line_out to text file "data_out.txt"
-				end if;
+				--if not endfile(dataOut) then
+					readline(dataIn, line_in); 				-- parameter: file handle, line number (iterated automatically)
+					read(line_in, PLACEHOLDER1);				
+
+					readline(dataOut, line_in); 			-- parameter: file handle, line number (iterated automatically)
+					read(line_in, PLACEHOLDER2);				
+					
+					compare(PLACEHOLDER1, PLACEHOLDER2);
+					
+					wait for CLK_PERIOD * 1;
+				--end if;
 				
 			end loop;
 			
@@ -146,75 +226,9 @@ BEGIN
 			file_close(dataIn);
 			file_close(dataOut);
 			
-			wait for CLK_PERIOD * 20;
-			
-			read_write_done <= true;
-			
-			--wait;
-		end process STIM;
-		
-		-- Monitoring and checks
-		CHK: process
-		
-			-- TODO: how to write report into error log??
-			
-			-- File and line buffer declaration
-			file dataIn				: text;
-			file dataOut 			: text;
-			file errorLog			: text;
-			variable line_in		: line;
-			variable line_out		: line;
-			variable error_line		: line;
-			variable PLACEHOLDER1	: std_logic_vector(0 to DATA_WIDTH-1);
-			variable PLACEHOLDER2	: std_logic_vector(0 to DATA_WIDTH-1);
-			
-			-- Procedure compare used in this process to compare assumed identical lines from dataIn and dataOut
-			procedure compare(	variable din : inout std_logic_vector; 
-								variable dout: inout std_logic_vector) is
-			begin
-				-- TODO: write report to log file
-				assert  din = dout
-				report "Data discrepancy: Data in " & integer'image(to_integer(unsigned(din))) 
-				& " is not consistent with data out " & integer'image(to_integer(unsigned(dout)))
-				severity error;
-			end procedure compare;
-			
-		begin
-		
-			-- Pseudo decription: read same line in dataIn and dataOut. Compare the read values. If they are not identical, report an error using assert.
-			if read_write_done <= true then
-				-- Open source and destination text files
-				file_open(dataIn, "data_in.txt", read_mode);	-- dataIn is the file handle for the text file containing test data
-				file_open(dataOut,"data_out.txt", read_mode);	-- dataOut is the file handle for the text file where FIFO data was written to
-				
-				
-				while not endfile(dataIn) loop 					-- line number is looped automatically
-					--if not endfile(dataOut) then
-						readline(dataIn, line_in); 				-- parameter: file handle, line number (iterated automatically)
-						read(line_in, PLACEHOLDER1);				
+			tests_done <= true;
+			wait;
 
-						readline(dataOut, line_in); 			-- parameter: file handle, line number (iterated automatically)
-						read(line_in, PLACEHOLDER2);				
-						
-						compare(PLACEHOLDER1, PLACEHOLDER2);
-						
-						wait for CLK_PERIOD * 1;
-					--end if;
-					
-				end loop;
-				
-				-- Close source and destination text files (good practice to close files after use!)
-				file_close(dataIn);
-				file_close(dataOut);
-				
-				tests_done <= true;
-				wait;
-			end if;
-
-		end process CHK;
-		
-		
-	
-	--end process TB;
+	end process CHK;
 	
 END;
