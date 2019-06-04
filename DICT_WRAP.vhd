@@ -31,7 +31,7 @@
 -- Outputs		:
 -- MCLK_I2S			Master clock (25MHz)
 -- SCLK_I2S			Serial clock (bit clock, 3.125MHz)
--- CLK_SMPL			Word select signal for I2S bus. High: R channel, low: L channel (48.8kHz)
+-- WS_I2S			Word select signal for I2S bus. High: R channel, low: L channel (48.8kHz)
 --					Also used as audio sampling clock
 -- SDO_I2S		Serial data out. Side note: resolution of DAC is 24 bit,
 --					thus we must shift incoming 16 bit vector 8 bits left.
@@ -67,10 +67,9 @@ entity DICT_WRAP is
 			PLAY		: in std_logic;							-- button "PLAY" (4th from l.t.r.)
 			DLT			: in std_logic;							-- button "DELETE" (5th from l.t.r)
 
-			CLKO		: out std_logic;
 			MCLK_I2S 	: out std_logic;						-- master clock for I2S (25MHz)
 			SCLK_I2S	: out std_logic;						-- serial clock for I2S (3.125MHz)
-			CLK_SMPL	: out std_logic;						-- word select (48.8kHz)
+			WS_I2S		: out std_logic;						-- word select (48.8kHz)
 			SDO_I2S		: out std_logic;						-- serial data out for I2S
 			SSD			: out std_logic_vector(31 downto 0);	-- Seven segment display control
 			LED			: out std_logic_matrix(1 to 10, 1 to 12);
@@ -85,6 +84,8 @@ architecture str of DICT_WRAP is
 
 	signal S_DATA_IN 	: std_logic_vector(15 downto 0);
 	signal S_DATA_OUT	: std_logic_vector(15 downto 0);
+	signal S_DATA_BTW	: std_logic_vector(15 downto 0);
+	
 	signal S_PLAY		: std_logic;
 	signal S_DLT		: std_logic;
 	signal S_RCRD		: std_logic;
@@ -99,8 +100,11 @@ architecture str of DICT_WRAP is
 	signal S_DMINUS		: std_logic;
 	signal S_STATE		: std_logic_vector(1 downto 0);
 
-	signal S_FIFO_RD	: std_logic;
-	signal S_FIFO_WR	: std_logic;
+	signal S_FIFO_I_RD	: std_logic;
+	signal S_FIFO_I_WR	: std_logic;
+	signal S_FIFO_O_RD	: std_logic;
+	signal S_FIFO_O_WR	: std_logic;
+	signal S_WS			: std_logic;
 
 
 begin
@@ -113,10 +117,11 @@ begin
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
 
-	-- Test lines to visualise current state
-	LED(1, 1) <= S_STATE(0);
-	LED(1, 2) <= S_STATE(1);
 
+	S_FIFO_I_WR <= '1';
+	S_FIFO_I_RD <= S_FIFO_O_WR;
+	
+	WS_I2S <= S_WS;
 
 
 
@@ -127,40 +132,35 @@ begin
 					DIN 	=> S_DATA_OUT,
 					MCLK 	=> MCLK_I2S,
 					SCLK 	=> SCLK_I2S,
-					WS 		=> CLK_SMPL,
+					WS 		=> S_WS,
 					DOUT 	=> SDO_I2S);
 
 	DEB_PLAY: entity work.debouncer		-- direct instantiation of component debouncer for play button
-	port map(
-					CLK 	=> CLK,
+		port map(	CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLAY,
 					O		=> S_DPLAY);
 
 	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
-	port map(
-					CLK 	=> CLK,
+		port map(	CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_DLT,
 					O		=> S_DDLT);
 
 	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
-	port map(
-					CLK 	=> CLK,
+	port map(		CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_RCRD,
 					O		=> S_DRCRD);
 
 	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
-	port map(
-					CLK 	=> CLK,
+		port map(	CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_PLUS,
 					O		=> S_DPLUS);
 
 	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
-	port map(
-					CLK 	=> CLK,
+		port map(	CLK 	=> CLK,
 					RST 	=> RST,
 					I 		=> S_MINUS,
 					O		=> S_DMINUS);
@@ -222,17 +222,31 @@ begin
 					SDI => SDI_SPI,
 					CS => CS_SPI);
 
-	FIFO: entity work.fifo
-		port map(	clk => CLK,
+	FIFO_IN: entity work.fifo
+		port map(	clk => S_WS,
 					reset => RST,
-					rd => S_FIFO_RD,
-					wr => S_FIFO_WR,
+					rd => S_FIFO_I_RD,
+					wr => S_FIFO_I_WR,
 					data_in => S_DATA_IN,
+					data_out => S_DATA_BTW,
+					full => open,
+					empty => open,
+					almost_full => S_FIFO_O_WR,
+					almost_empty => open);
+
+
+	FIFO_OUT: entity work.fifo
+		port map (	clk => S_WS,
+					reset => RST,
+					rd => S_FIFO_O_RD,
+					wr => S_FIFO_O_WR,
+					data_in => S_DATA_BTW,
 					data_out => S_DATA_OUT,
 					full => open,
 					empty => open,
-					almost_full => S_FIFO_RD,
+					almost_full => S_FIFO_O_RD,
 					almost_empty => open);
+	
 
 
 end; -- architecture str
