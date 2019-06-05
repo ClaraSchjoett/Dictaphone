@@ -4,11 +4,11 @@ USE ieee.numeric_std.all;
 
 ENTITY peak_level_ctrl IS
 PORT (
-	clk, rst		 			: IN STD_LOGIC;
+	clk, rst		 		: IN STD_LOGIC;
 	audioDataL				: IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 	audioDataR				: IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-	audioLevelLedL		: OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
-	audioLevelLedR  	: OUT STD_LOGIC_VECTOR(11 DOWNTO 0)
+	audioLevelLedL			: OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
+	audioLevelLedR  		: OUT STD_LOGIC_VECTOR(11 DOWNTO 0)
 	);
 END peak_level_ctrl;
 
@@ -16,37 +16,37 @@ END peak_level_ctrl;
 ARCHITECTURE functional_level OF peak_level_ctrl IS
 
 	-- generic signals
-	CONSTANT g_MClkFreq	: integer := 50; -- Master Clock in MHz
+	CONSTANT g_MClkFreq		: integer := 50; -- Master Clock in MHz
 
 	-- digital signals
-	SIGNAL s_clk_1kHz_en : STD_LOGIC;
-	SIGNAL	s_AudioDataL			: STD_LOGIC_VECTOR(15 DOWNTO 0);
-	SIGNAL	s_AudioDataR			: STD_LOGIC_VECTOR(15 DOWNTO 0);
+	SIGNAL s_clk_1kHz_en 	: STD_LOGIC;
+	SIGNAL	s_AudioDataL	: STD_LOGIC_VECTOR(15 DOWNTO 0);
+	SIGNAL	s_AudioDataR	: STD_LOGIC_VECTOR(15 DOWNTO 0);
 	-- component declarations
 	COMPONENT clk_divider_1khz
   PORT(
-    CLK      		: IN STD_LOGIC;
-    RST      		: IN STD_LOGIC;
-	 	clk_en	 		: OUT STD_LOGIC;
-	 	clk_1kHz_en : OUT STD_LOGIC
+		CLK					: IN STD_LOGIC;
+		RST					: IN STD_LOGIC;
+	 	clk_en		 		: OUT STD_LOGIC;
+	 	clk_1kHz_en			: OUT STD_LOGIC
   );
 	END COMPONENT ;
 
 	COMPONENT PeakLevelMeter
 	GENERIC(
-		MClkFreq	: integer := 50 -- Master Clock in MHz
+		MClkFreq			: integer := 50 -- Master Clock in MHz
 	);
 	PORT(
-		MClk						: IN STD_LOGIC;
-		Clk1msEn				: IN STD_LOGIC;
+		MClk				: IN STD_LOGIC;
+		Clk1msEn			: IN STD_LOGIC;
 		AudioDataL			: IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 		AudioDataR			: IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 		AudioLevelL			: OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
 		AudioLevelR			: OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
-		AudioLevelLedL	: OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
-  	AudioLevelLedR  : OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
-		ClipL						: OUT STD_LOGIC;
-		ClipR						: OUT STD_LOGIC
+		AudioLevelLedL		: OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
+		AudioLevelLedR  	: OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
+		ClipL				: OUT STD_LOGIC;
+		ClipR				: OUT STD_LOGIC
 	);
 	END COMPONENT;
 

@@ -105,6 +105,9 @@ architecture str of DICT_WRAP is
 	signal S_FIFO_O_RD	: std_logic;
 	signal S_FIFO_O_WR	: std_logic;
 	signal S_WS			: std_logic;
+	
+	signal S_LLVL		: std_logic_vector(11 downto 0);
+	signal S_RLVL		: std_logic_vector(11 downto 0);
 
 
 begin
@@ -181,38 +184,40 @@ begin
 					SSD 	=> SSD);
 
 
-	PLVL: entity work.peak_level_ctrl		-- direct instantiation of component peak level control
+	PLVL: entity work.peak_level_ctrl	-- direct instantiation of component peak level control
 		port map(	clk 	=> CLK,
 					rst 	=> RST,
 					
 					audioDataL => S_DATA_IN,
 					audioDataR => S_DATA_OUT,
+					audioLevelLedL => S_LLVL,
+					audioLevelLedR => S_RLVL);
 					
-					audioLevelLedL(0) => LED(9,1),
-					audioLevelLedL(1) => LED(9,2),
-					audioLevelLedL(2) => LED(9,3),
-					audioLevelLedL(3) => LED(9,4),
-					audioLevelLedL(4) => LED(9,5),
-					audioLevelLedL(5) => LED(9,6),
-					audioLevelLedL(6) => LED(9,7),
-					audioLevelLedL(7) => LED(9,8),
-					audioLevelLedL(8) => LED(9,9),
-					audioLevelLedL(9) => LED(9,10),
-					audioLevelLedL(10) => LED(9,11),
-					audioLevelLedL(11) => LED(9,12),
+					-- audioLevelLedL(0) => LED(9,1),
+					-- audioLevelLedL(1) => LED(9,2),
+					-- audioLevelLedL(2) => LED(9,3),
+					-- audioLevelLedL(3) => LED(9,4),
+					-- audioLevelLedL(4) => LED(9,5),
+					-- audioLevelLedL(5) => LED(9,6),
+					-- audioLevelLedL(6) => LED(9,7),
+					-- audioLevelLedL(7) => LED(9,8),
+					-- audioLevelLedL(8) => LED(9,9),
+					-- audioLevelLedL(9) => LED(9,10),
+					-- audioLevelLedL(10) => LED(9,11),
+					-- audioLevelLedL(11) => LED(9,12),
 					
-					audioLevelLedR(0) => LED(10,1),
-					audioLevelLedR(1) => LED(10,2),
-					audioLevelLedR(2) => LED(10,3),
-					audioLevelLedR(3) => LED(10,4),
-					audioLevelLedR(4) => LED(10,5),
-					audioLevelLedR(5) => LED(10,6),
-					audioLevelLedR(6) => LED(10,7),
-					audioLevelLedR(7) => LED(10,8),
-					audioLevelLedR(8) => LED(10,9),
-					audioLevelLedR(9) => LED(10,10),
-					audioLevelLedR(10) => LED(10,11),
-					audioLevelLedR(11) => LED(10,12));
+					-- audioLevelLedR(0) => LED(10,1),
+					-- audioLevelLedR(1) => LED(10,2),
+					-- audioLevelLedR(2) => LED(10,3),
+					-- audioLevelLedR(3) => LED(10,4),
+					-- audioLevelLedR(4) => LED(10,5),
+					-- audioLevelLedR(5) => LED(10,6),
+					-- audioLevelLedR(6) => LED(10,7),
+					-- audioLevelLedR(7) => LED(10,8),
+					-- audioLevelLedR(8) => LED(10,9),
+					-- audioLevelLedR(9) => LED(10,10),
+					-- audioLevelLedR(10) => LED(10,11),
+					-- audioLevelLedR(11) => LED(10,12));
 
 	ICNV: entity work.SER2PAR_SPI		-- direct instantiation of component conversion to parallel data
 		port map(	CLK => CLK,
@@ -246,6 +251,14 @@ begin
 					empty => open,
 					almost_full => S_FIFO_O_RD,
 					almost_empty => open);
+					
+	NAVI: entity work.LEDmatrix
+		port map ( 	CLK => CLK,
+					RST => RST,
+					STATE => S_STATE,
+					MICLVL => S_LLVL,
+					LSLVL => S_RLVL,
+					LED => LED);
 	
 
 
