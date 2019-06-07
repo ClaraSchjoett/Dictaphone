@@ -61,7 +61,8 @@ begin -- architecture rtl
 		port map(
 			CLK			=> CLK,
 			RST			=> RST,
-			IMP			=> impulse);
+			IMP			=> impulse,
+			EN			=> '1';);
 
 	-- Clock in new values into registers
 	-- Type: Sequential

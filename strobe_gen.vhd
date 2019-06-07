@@ -33,25 +33,30 @@ entity strobe_gen is
 	generic(	INTERVAL	: integer := 6);		-- Number of clock cycles between strobes
     port( 		CLK 		: in  STD_LOGIC;		-- 50MHz onboard clock
 				RST 		: in  STD_LOGIC;		-- Reset
-				IMP 		: out  STD_LOGIC);		-- Strobe output
+				IMP 		: out STD_LOGIC;		-- Strobe output
+				EN			: in STD_LOGIC);
 end strobe_gen;
 
 architecture rtl of strobe_gen is
 begin
 
-	STROBE: process(CLK, RST) 
+	STROBE: process(CLK, RST, EN) 
 		variable counter : integer := 1;
 	begin 
 		if(RST = '0')  then							-- Reset low active and asynchronous
 			counter := 1;
 		elsif falling_edge(CLK) then				-- Update on falling edge
-			if(counter = INTERVAL) then
-				IMP <= '1';
-				counter := 1;
-			else
-				IMP <= '0';
-				counter := counter + 1;
+			if EN then
+				if(counter = INTERVAL) then
+					IMP <= '1';
+					counter := 1;
+				else
+					IMP <= '0';
+					counter := counter + 1;
+				end if;
 			end if;
+		elsif falling_edge(EN) then
+			counter := 1;
 		end if;
 	end process;
 end rtl;

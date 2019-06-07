@@ -27,7 +27,7 @@
 --
 -- Outputs:
 -- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING, '11' = DELETING
--- BCD				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
+-- TRACK				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -41,11 +41,17 @@ entity FSM_MENU is
 			RST			: in std_logic;
 			PLAY		: in std_logic;
 			RCRD		: in std_logic;
-			DLT			: in std_logic;		
+			DLT			: in std_logic;
 			PLUS		: in std_logic;
 			MINUS		: in std_logic;
+			
+			REC_PLAY_FINISHED	: in std_logic;
+			DELETE		: out std_logic;
+			OCCUPIED	: in std_logic;
+			
 			STATE		: out std_logic_vector(1 downto 0);
-			BCD			: out std_logic_vector(9 downto 0));	 
+			TRACK		: out std_logic_vector(3 downto 0)
+			FREE_SLOTS	: out std_logic_vector(4 downto 0));
 
 end entity FSM_MENU;
 
@@ -53,10 +59,10 @@ end entity FSM_MENU;
 
 architecture rtl of FSM_MENU is
 
-	type states is (PLAYING, RECORDING, DELETING, IDLE); 	-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
+	type states is (PLAYING, RECORDING, IDLE); 	-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
 	signal state_next, state_reg: states;					-- state register
-	signal track_next, track_number: unsigned(4 downto 0); -- := "00001";
-
+	signal track_next, track_number: unsigned(3 downto 0); -- := "00001";
+	signal S_GOTO_IDLE	: std_logic;
 begin -- architecture rtl
 
 	-- state registers for menu state and track number
@@ -65,9 +71,14 @@ begin -- architecture rtl
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
 			track_number <= "00001";
+			DELETE <= '0';
+			S_GOTO_IDLE <= '0';
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
 			track_number <= track_next;
+			if falling_edge(REC_PLAY) then
+				S_GOTO_IDLE <= '1';
+			end if;
 		end if;
 	end process REG;
 		
@@ -77,35 +88,20 @@ begin -- architecture rtl
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
 		case state_reg is
 			when IDLE =>									-- when the state is IDLE, the condition for it to change TODO
-				-- TODO
-				-- Test lines, adjust 
-				if PLAY = '1' then
+				if PLAY = '1' and OCCUPIED then
 					state_next <= PLAYING;
-				elsif RCRD = '1' then 
+				elsif RCRD = '1' and not OCCUPIED then 
 					state_next <= RECORDING;
-				elsif DLT = '1' then
-					state_next <= DELETING;
 				end if;
 			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
 				-- TODO
-				if RCRD = '1' then 
-					state_next <= RECORDING;
-				elsif DLT = '1' then
-					state_next <= DELETING;
+				if REC_PLAY_FINISHED then 
+					state_next <= IDLE;
 				end if;
 			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
 				-- TODO
-				if PLAY = '1' then
+				if REC_PLAY_FINISHED then
 					state_next <= PLAYING;
-				elsif DLT = '1' then
-					state_next <= DELETING;
-				end if;
-			when DELETING =>								-- when the state is DELETING, the condition for it to change TODO
-				-- TODO
-				if PLAY = '1' then
-					state_next <= PLAYING;
-				elsif RCRD = '1' then 
-					state_next <= RECORDING;
 				end if;
 			when others => null;
 		end case;
@@ -116,7 +112,6 @@ begin -- architecture rtl
 		STATE <= "00" when IDLE,
 		         "01" when PLAYING,
 				 "10" when RECORDING,
-				 "11" when DELETING,
 				 "00" when others;		
 				 
 	-- Track number control, must be purely combinatorial!
@@ -125,13 +120,13 @@ begin -- architecture rtl
 		track_next <= track_number;
 		if PLUS = '1' then
 			track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
-			if track_number = 16 then						-- Check for overflow
-				track_next <= "00001";
+			if track_number = 15 then						-- Check for overflow
+				track_next <= "0000";
 			end if;											-- variableA := variableA + 1; NOT ALLOWED
 		elsif MINUS = '1' then
 			track_next <= track_number - 1;					-- If no underflow, decrement variable track_number
-			if track_number = 1	then						-- Check for underflow
-				track_next <= "10000";
+			if track_number = 0	then						-- Check for underflow
+				track_next <= "1111";
 			end if;
 		end if;
 	end process;
@@ -139,8 +134,8 @@ begin -- architecture rtl
 	-- TODO: memory management, evaluation of current track number
 	
 	-- evalutation of current track number for display on SSD
-	BCD(9 downto 5) <= std_logic_vector(track_number);
+	TRACK <= std_logic_vector(track_number);
 	-- test line, delete when finished
-	BCD(4 downto 0) <= std_logic_vector(track_number);
+
 
 end architecture rtl;

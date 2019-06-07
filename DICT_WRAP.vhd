@@ -82,34 +82,55 @@ end DICT_WRAP;
 
 architecture str of DICT_WRAP is
 
-	signal S_DATA_IN 	: std_logic_vector(15 downto 0);
-	signal S_DATA_OUT	: std_logic_vector(15 downto 0);
-	signal S_DATA_BTW	: std_logic_vector(15 downto 0);
+	signal S_FIFO_I_DI 			: std_logic_vector(15 downto 0);
+	signal S_FIFO_I_DO			: std_logic_vector(15 downto 0);
+	signal S_FIFO_O_DI			: std_logic_vector(15 downto 0);
+	signal S_FIFO_O_DO			: std_logic_vector(15 downto 0);
 	
-	signal S_PLAY		: std_logic;
-	signal S_DLT		: std_logic;
-	signal S_RCRD		: std_logic;
-	signal S_PLUS		: std_logic;
-	signal S_MINUS		: std_logic;
-	signal S_BCD		: std_logic_vector(9 downto 0);
+	signal S_PLAY				: std_logic;
+	signal S_DLT				: std_logic;
+	signal S_RCRD				: std_logic;
+	signal S_PLUS				: std_logic;
+	signal S_MINUS				: std_logic;
+	signal S_BCD				: std_logic_vector(9 downto 0);
+	signal S_TRACK				: std_logic_vector(3 downto 0);
 
-	signal S_DPLAY		: std_logic;
-	signal S_DDLT		: std_logic;
-	signal S_DRCRD		: std_logic;
-	signal S_DPLUS		: std_logic;
-	signal S_DMINUS		: std_logic;
-	signal S_STATE		: std_logic_vector(1 downto 0);
+	signal S_DPLAY				: std_logic;
+	signal S_DDLT				: std_logic;
+	signal S_DRCRD				: std_logic;
+	signal S_DPLUS				: std_logic;
+	signal S_DMINUS				: std_logic;
+	signal S_STATE				: std_logic_vector(1 downto 0);
 
-	signal S_FIFO_I_RD	: std_logic;
-	signal S_FIFO_I_WR	: std_logic;
-	signal S_FIFO_O_RD	: std_logic;
-	signal S_FIFO_O_WR	: std_logic;
-	signal S_WS			: std_logic;
+	signal S_FIFO_I_RD			: std_logic;
+	signal S_FIFO_I_WR			: std_logic;
+	signal S_FIFO_I_WR_EN		: std_logic;
 	
-	signal S_LLVL		: std_logic_vector(11 downto 0);
-	signal S_RLVL		: std_logic_vector(11 downto 0);
+	signal S_FIFO_I_EMPTY		: std_logic;
+	signal S_FIFO_I_ALMOST_FULL	: std_logic;
+	signal S_FIFO_I_CLR			: std_logic;
 
 
+	signal S_FIFO_O_RD			: std_logic;
+	signal S_FIFO_I_RD_EN		: std_logic;
+	signal S_FIFO_O_WR			: std_logic;
+	signal S_FIFO_O_EMPTY		: std_logic;
+	signal S_FIFO_O_ALMOST_FULL	: std_logic;
+	signal S_WS					: std_logic;
+
+	signal S_LLVL				: std_logic_vector(11 downto 0);
+	signal S_RLVL				: std_logic_vector(11 downto 0);
+
+
+	signal	S_REC_PLAY			: std_logic;
+	
+	signal	S_RAM_READY			: std_logic;
+	signal	S_RAM_STROBE		: std_logic;
+	signal	S_RAM_WR			: std_logic;
+	signal	S_RAM_ADDRESS		: std_logic_vector(23 downto 0);
+	signal	S_RAM_DIN			: std_logic_vector(15 downto 0);
+	signal	S_RAM_DOUT			: std_logic_vector(15 downto 0);
+	signal	S_RAM_DOUT_READY	: std_logic;
 begin
 
 	-- assign inputs and outputs
@@ -119,6 +140,7 @@ begin
 	S_RCRD <= not RCRD;
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
+	S_TRACK <= S_BCD
 
 
 	S_FIFO_I_WR <= '1';
@@ -132,7 +154,7 @@ begin
 	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
 		port map(	CLK 	=> CLK,
 					RST 	=> RST,
-					DIN 	=> S_DATA_OUT,
+					DIN 	=> S_FIFO_O_DO,
 					MCLK 	=> MCLK_I2S,
 					SCLK 	=> SCLK_I2S,
 					WS 		=> S_WS,
@@ -177,10 +199,10 @@ begin
 					PLUS 	=> S_DPLUS,
 					MINUS	=> S_DMINUS,
 					STATE	=> S_STATE,
-					BCD		=> S_BCD);
+					TRACK		=> S_BCD);
 
-	TRANS: entity work.BCD2SSD			-- direct instantiation of component translation BCD to SSD control signal
-		port map(	BCD 	=> S_BCD,
+	TRANS: entity work.BCD2SSD			-- direct instantiation of component translation TRACK to SSD control signal
+		port map(	TRACK 	=> S_BCD,
 					SSD 	=> SSD);
 
 
@@ -188,52 +210,128 @@ begin
 		port map(	clk 	=> CLK,
 					rst 	=> RST,
 					
-					audioDataL => S_DATA_IN,
-					audioDataR => S_DATA_OUT,
+					audioDataL => S_FIFO_I_DI,
+					audioDataR => S_FIFO_O_DO,
 					audioLevelLedL => S_LLVL,
 					audioLevelLedR => S_RLVL);
 
 	ICNV: entity work.SER2PAR_SPI		-- direct instantiation of component conversion to parallel data
-		port map(	CLK => CLK,
-					RST => RST,
-					SCLK => SCLK_SPI,
-					DOUT => S_DATA_IN,
-					SDI => SDI_SPI,
-					CS => CS_SPI);
+		port map(	CLK 	=> CLK,
+					RST 	=> RST,
+					SCLK	=> SCLK_SPI,
+					DOUT 	=> S_FIFO_I_DI,
+					SDI 	=> SDI_SPI,
+					CS =	> CS_SPI);
 
 	FIFO_IN: entity work.fifo
-		port map(	clk => S_WS,
-					reset => RST,
-					rd => S_FIFO_I_RD,
-					wr => S_FIFO_I_WR,
-					data_in => S_DATA_IN,
-					data_out => S_DATA_BTW,
-					full => open,
-					empty => open,
-					almost_full => S_FIFO_O_WR,
-					almost_empty => open);
+		port map(	clk 			=> S_WS,
+					reset			=> (RST and not S_FIFO_I_CLR),
+					rd 				=> S_FIFO_I_RD,
+					wr 				=> S_FIFO_I_WR,
+					data_in			=> S_FIFO_I_DI,
+					data_out		=> S_FIFO_I_DO,
+					full 			=> open,
+					empty 			=> open,
+					almost_full		=> S_FIFO_O_WR,
+					almost_empty	=> open);
 
 
 	FIFO_OUT: entity work.fifo
-		port map (	clk => S_WS,
-					reset => RST,
-					rd => S_FIFO_O_RD,
-					wr => S_FIFO_O_WR,
-					data_in => S_DATA_BTW,
-					data_out => S_DATA_OUT,
-					full => open,
-					empty => open,
-					almost_full => S_FIFO_O_RD,
-					almost_empty => open);
+		port map (	clk 			=> S_WS,
+					reset 			=> RST,
+					rd 				=> S_FIFO_O_RD,
+					wr 				=> S_FIFO_O_WR,
+					data_in 		=> S_FIFO_O_DI,
+					data_out 		=> S_FIFO_O_DO,
+					full 			=> open,
+					empty 			=> open,
+					almost_full 	=> S_FIFO_O_RD,
+					almost_empty	=> open);
 					
 	NAVI: entity work.LEDmatrix
-		port map ( 	CLK => CLK,
-					RST => RST,
-					STATE => S_STATE,
-					MICLVL => S_LLVL,
-					LSLVL => S_RLVL,
-					LED => LED);
+		port map(	CLK 	=> CLK,
+					RST 	=> RST,
+					STATE	=> S_STATE,
+					MICLVL	=> S_LLVL,
+					LSLVL	=> S_RLVL,
+					LED 	=> LED);
 	
+	
+	MEMC:	entity work.MEM_CTRL
+		port map(	CLK					=> CLK,
+					RST					=> RST,
+					STATE				=> S_STATE,
+					TRACK				=> S_TRACK,
+					DELETE				=> '0',
+					REC_PLAY			=> S_REC_PLAY,
+					OCCUPIED			=> open,
+					
+					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
+					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,
+					FIFO_I_RD			=> S_FIFO_I_RD,
+					FIFO_I_WR			=> S_FIFO_I_WR_EN,
+					FIFO_I_CLR			=> S_FIFO_I_CLR,
+					FIFO_O_EMPTY		=> S_FIFO_O_EMPTY,
+					FIFO_O_ALMOST_FULL	=> S_FIFO_O_ALMOST_FULL,
+					FIFO_O_RD			=> S_FIFO_O_RD_EN,
+					FIFO_O_WR			=> S_FIFO_O_WR,
+					
+					cmd_ready			=> S_RAM_READY,
+					cmd_strobe			=> S_RAM_STROBE,
+					cmd_wr				=> S_RAM_WR,
+					cmd_address			=> S_RAM_ADDRESS,
+					data_out_ready		=> S_RAM_DOUT_READY,
+
+	STRI:	entity work.strobe_gen
+		generic map (
+					INTERVAL	=> 1024);
+		
+		port map (	CLK		=> CLK,
+					RST		=> RST,
+					INT		=> S_FIFO_I_WR,
+					EN		=> S_FIFO_I_WR_EN);
+	
+	STRO:	entity work.strobe_gen
+		generic map (
+					INTERVAL	=> 1024);
+		
+		port map (	CLK		=> CLK,
+					RST		=> RST,
+					INT		=> S_FIFO_O_RD,
+					EN		=> S_FIFO_O_RD_EN);
 
 
+	SDRAM:	entity sdram_controller
+		port map (	clock			=> CLK,
+					reset_n			=> RST,
+					cmd_ready		=> S_RAM_READY,
+					cmd_strobe		=> S_RAM_STROBE,
+					cmd_wr			=> S_RAM_WR,
+					cmd_address		=> S_RAM_ADDRESS,
+					cmd_data_in		=> S_FIFO_I_DO,
+					data_out		=> S_FIFO_O_DI,
+					data_out_ready	=> S_RAM_DOUT_READY,
+
+					sdram_clk		=> sdram_clk,
+					sdram_cke		=> sdram_cke,
+					sdram_cs_n		=> sdram_cs_n,
+					sdram_ras_n		=> sdram_ras_n,
+					sdram_cas_n		=> sdram_cas_n,
+					sdram_we_n		=> sdram_we_n,
+					sdram_dqm_n		=> sdram_dqm_n,
+					sdram_addr		=> sdram_addr,
+					sdram_ba		=> sdram_ba,
+					sdram_data		=> sdram_data);
 end; -- architecture str
+
+
+
+
+
+
+
+
+
+
+
+
