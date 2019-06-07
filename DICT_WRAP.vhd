@@ -33,7 +33,7 @@
 -- SCLK_I2S			Serial clock (bit clock, 3.125MHz)
 -- WS_I2S			Word select signal for I2S bus. High: R channel, low: L channel (48.8kHz)
 --					Also used as audio sampling clock
--- SDO_I2S		Serial data out. Side note: resolution of DAC is 24 bit,
+-- SDO_I2S			Serial data out. Side note: resolution of DAC is 24 bit,
 --					thus we must shift incoming 16 bit vector 8 bits left.
 
 -- SCLK_SPI			Serial clock for SPI
@@ -41,7 +41,7 @@
 -- SDI_SPI			Serial data in
 
 -- SSD				Seven segment display control
--- LED				
+-- LED				LED matrix control
 
 -------------------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ architecture str of DICT_WRAP is
 	signal S_RCRD				: std_logic;
 	signal S_PLUS				: std_logic;
 	signal S_MINUS				: std_logic;
-	signal S_BCD				: std_logic_vector(9 downto 0);
+	signal S_TRACK				: std_logic_vector(9 downto 0);
 	signal S_TRACK				: std_logic_vector(3 downto 0);
 
 	signal S_DPLAY				: std_logic;
@@ -140,7 +140,7 @@ begin
 	S_RCRD <= not RCRD;
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
-	S_TRACK <= S_BCD
+	S_TRACK <= S_TRACK
 
 
 	S_FIFO_I_WR <= '1';
@@ -199,10 +199,10 @@ begin
 					PLUS 	=> S_DPLUS,
 					MINUS	=> S_DMINUS,
 					STATE	=> S_STATE,
-					TRACK		=> S_BCD);
+					TRACK	=> S_TRACK);
 
-	TRANS: entity work.BCD2SSD			-- direct instantiation of component translation TRACK to SSD control signal
-		port map(	TRACK 	=> S_BCD,
+	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
+		port map(	TRACK 	=> S_TRACK,
 					SSD 	=> SSD);
 
 

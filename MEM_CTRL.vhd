@@ -5,8 +5,8 @@
 -- File       	: 	MEM_CTRL.vhd
 -- Author     	: 	Peter Wüthrich
 -- Company    	: 	BFH
--- Created    	: 	2019-04-06
--- Last update	: 	2019-04-06
+-- Created    	: 	2019-06-07
+-- Last update	: 	
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -14,7 +14,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  	:
 -- Date        		Version  	Author  	Description
--- 2019-05-08		1.0			Peter		Created
+-- 2019-06-07		1.0			Peter		Created
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- TODO

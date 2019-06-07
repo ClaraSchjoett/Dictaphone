@@ -15,6 +15,7 @@
 -- Revisions  	:
 -- Date				Version		Author  	Description
 -- 2019-05-13		1.0      	Clara		Created
+-- 2019-06-07		1.1			Peter		Condition for states changed to fulfill requirements
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				Onboard system clock
@@ -24,10 +25,13 @@
 -- DLT				DELETING selected track (debounced impulse, clock cycle duration)
 -- PLUS				One track forwards (debounced impulse, clock cycle duration)
 -- MINUS			One track backwards (debounced impulse, clock cycle duration)
+-- REC_PLAY_FINISHED
+-- OCCUPIED
 --
 -- Outputs:
--- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING, '11' = DELETING
--- TRACK				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
+-- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING
+-- TRACK			Seven segment display control, SEG1 and SEG1
+-- FREE_SLOTS		Seven segment display control, SEG3 and SEG4
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -37,21 +41,20 @@ use ieee.numeric_std.all;
 
 entity FSM_MENU is
 
-  port (	CLK        	: in std_logic;   
-			RST			: in std_logic;
-			PLAY		: in std_logic;
-			RCRD		: in std_logic;
-			DLT			: in std_logic;
-			PLUS		: in std_logic;
-			MINUS		: in std_logic;
+  port (	CLK        			: in std_logic;   
+			RST					: in std_logic;
+			PLAY				: in std_logic;
+			RCRD				: in std_logic;
+			DLT					: in std_logic;
+			PLUS				: in std_logic;
+			MINUS				: in std_logic;
+			REC_PLAY_FINISHED	: in std_logic;				-- Strobe when recording or track is finished
+			--OCCUPIED			: in std_logic;				-- 
 			
-			REC_PLAY_FINISHED	: in std_logic;
-			DELETE		: out std_logic;
-			OCCUPIED	: in std_logic;
-			
-			STATE		: out std_logic_vector(1 downto 0);
-			TRACK		: out std_logic_vector(3 downto 0)
-			FREE_SLOTS	: out std_logic_vector(4 downto 0));
+			DELETE				: out std_logic;
+			STATE				: out std_logic_vector(1 downto 0);
+			TRACK				: out std_logic_vector(3 downto 0)
+			FREE_SLOTS			: out std_logic_vector(4 downto 0));
 
 end entity FSM_MENU;
 
@@ -59,9 +62,9 @@ end entity FSM_MENU;
 
 architecture rtl of FSM_MENU is
 
-	type states is (PLAYING, RECORDING, IDLE); 	-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
+	type states is (PLAYING, RECORDING, IDLE); 				-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
 	signal state_next, state_reg: states;					-- state register
-	signal track_next, track_number: unsigned(3 downto 0); -- := "00001";
+	signal track_next, track_number: unsigned(3 downto 0); 
 	signal S_GOTO_IDLE	: std_logic;
 begin -- architecture rtl
 
@@ -130,9 +133,7 @@ begin -- architecture rtl
 			end if;
 		end if;
 	end process;
-	
-	-- TODO: memory management, evaluation of current track number
-	
+		
 	-- evalutation of current track number for display on SSD
 	TRACK <= std_logic_vector(track_number);
 	-- test line, delete when finished
