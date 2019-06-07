@@ -26,7 +26,7 @@
 -- MINUS			One track backwards (debounced impulse, clock cycle duration)
 --
 -- Outputs:
--- STATE			Current state of FSM (two bits). '00' = static (default), '01' = dynamic, '10' = xy-diagram
+-- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING, '11' = DELETING
 -- BCD				Seven segment display control. First 5 bits = track no. Last 5 bits = free slots.
 -------------------------------------------------------------------------------
 library ieee;
