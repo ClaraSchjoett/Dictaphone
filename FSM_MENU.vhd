@@ -41,17 +41,18 @@ use ieee.numeric_std.all;
 
 entity FSM_MENU is
 
-  port (	CLK        			: in std_logic;   
-			RST					: in std_logic;
-			PLAY				: in std_logic;
-			RCRD				: in std_logic;
-			DLT					: in std_logic;
-			PLUS				: in std_logic;
-			MINUS				: in std_logic;
-			REC_PLAY_FINISHED	: in std_logic;				-- Strobe when recording or track is finished
-			--OCCUPIED			: in std_logic;				-- 
+  port (	CLK        			: in std_logic;				-- system clock (50 MHz)
+			RST					: in std_logic;				-- asynchronous reset (low active)
 			
-			DELETE				: out std_logic;
+			PLAY				: in std_logic;				-- button play
+			RCRD				: in std_logic;				-- button record
+			DLT					: in std_logic;				-- button delete
+			PLUS				: in std_logic;				-- button plus
+			MINUS				: in std_logic;				-- button minus
+			REC_PLAY_FINISHED	: in std_logic;				-- Strobe when recording or track is finished
+			OCCUPIED			: in std_logic;				-- flag shows if selected track is free (low) or occupied (high)
+			
+			DELETE				: out std_logic;			-- delete selected track
 			STATE				: out std_logic_vector(1 downto 0);
 			TRACK				: out std_logic_vector(3 downto 0);
 			FREE_SLOTS			: out std_logic_vector(4 downto 0));
@@ -104,7 +105,7 @@ begin -- architecture rtl
 			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
 				-- TODO
 				if REC_PLAY_FINISHED then
-					state_next <= PLAYING;
+					state_next <= IDLE;
 				end if;
 			when others => null;
 		end case;
@@ -113,7 +114,7 @@ begin -- architecture rtl
 	-- selected signal assigment, concurrent form
 	with state_reg select 									-- assing output value to STATE, depending on the current state
 		STATE <= "00" when IDLE,
-		         "01" when PLAYING,
+				 "01" when PLAYING,
 				 "10" when RECORDING,
 				 "00" when others;		
 				 
@@ -121,15 +122,17 @@ begin -- architecture rtl
 	TRACK: process(PLUS, MINUS, track_number)
 	begin -- process TRACK
 		track_next <= track_number;
-		if PLUS = '1' then
-			track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
-			if track_number = 15 then						-- Check for overflow
-				track_next <= "0000";
-			end if;											-- variableA := variableA + 1; NOT ALLOWED
-		elsif MINUS = '1' then
-			track_next <= track_number - 1;					-- If no underflow, decrement variable track_number
-			if track_number = 0	then						-- Check for underflow
-				track_next <= "1111";
+		if STATE = "00"											-- only change track in IDLE
+			if PLUS = '1' then
+				track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
+				if track_number = 15 then						-- Check for overflow
+					track_next <= "0000";
+				end if;											-- variableA := variableA + 1; NOT ALLOWED
+			elsif MINUS = '1' then
+				track_next <= track_number - 1;					-- If no underflow, decrement variable track_number
+				if track_number = 0	then						-- Check for underflow
+					track_next <= "1111";
+				end if;
 			end if;
 		end if;
 	end process;

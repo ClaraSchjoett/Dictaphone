@@ -15,6 +15,7 @@
 -- Revisions  	:
 -- Date        		Version  	Author  	Description
 -- 2019-06-07		1.0			Peter		Created
+-- 2019-06-09		1.1			Peter		Debugged, added lots of comments
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- TODO
@@ -42,9 +43,8 @@ entity MEM_CTRL is
 			STATE				: in std_logic_vector(1 downto 0);	-- 00 --> IDLE, 01 --> PLAYING, 02 --> RECORDING
 			TRACK				: in std_logic_vector(3 downto 0);	-- track number, is equivalent with the 4 MSBs of the SDRAM address
 			DELETE				: in std_logic;						-- high pulse deletes selected track
-			REC_PLAY			: out std_logic;					-- is high during playing or recording process
-																		-- state must not be changed if this output is high
-			REC_PLAY_FINISHED	: out std_logic;
+			REC_PLAY_FINISHED	: out std_logic;					-- is high when playing/recording finished and changes
+																		-- back to low when state has changed to IDLE
 			OCCUPIED			: out std_logic;					-- is high if selected track is occupied
 			
 			FIFO_I_EMPTY		: in std_logic;						-- input fifo empty
@@ -97,24 +97,26 @@ begin
 		
 	begin
 		if RST = '0' then
-			REC_PLAY <= '0';
-			REC_PLAY_FINISHED <= '0';
-			OCCUPIED <= '0';
-			FIFO_I_RD <= '0';
-			FIFO_I_WR <= '0';
-			FIFO_I_CLR <= '0';
-			FIFO_O_RD <= '0';
-			FIFO_O_WR <= '0';
+			REC_PLAY_FINISHED	<= '0';
+			OCCUPIED			<= '0';
+			FIFO_I_RD			<= '0';
+			FIFO_I_WR			<= '0';
+			FIFO_I_CLR			<= '0';
+			FIFO_O_RD			<= '0';
+			FIFO_O_WR			<= '0';
+			cmd_strobe			<= '0';
+			cmd_wr				<= '0';
+			cmd_address			<= (others => '0');
 			
-			S_OCCUPIED		<= (others => '0');
-			S_ADDRESS		<= (others => '0');
+			S_OCCUPIED			<= (others => '0');
+			S_ADDRESS			<= (others => '0');
 			
-			S_WR_IN_PROGR	<= '0';
-			S_WR_DONE		<= '0';
-			S_RD_FROM_FIFO	<= '0';
+			S_WR_IN_PROGR		<= '0';
+			S_WR_DONE			<= '0';
+			S_RD_FROM_FIFO		<= '0';
 			
-			S_RD_IN_PROGR	<= '0';
-			S_PLAYING		<= '0';
+			S_RD_IN_PROGR		<= '0';
+			S_PLAYING			<= '0';
 			
 		elsif rising_edge(CLK) then
 		
@@ -124,11 +126,9 @@ begin
 			OCCUPIED <= S_OCCUPIED(to_integer(unsigned(TRACK)));
 			
 			if STATE = RECORDING then
-				cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));	
+				cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));
 				
-				--if REC_PLAY = '0' then 		CANNOT READ OUTPUT!		-- at the beginning set recording/playing flag
-				if STATE = "01" or STATE = "10" then 				
-					REC_PLAY <= '1';				-- set recording/playing flag
+				if S_ADDRESS = x"00000" then 		-- at the beginning
 					FIFO_I_WR <= '1';				-- start buffering data into fifo
 					FIFO_I_CLR <= '0';				-- release reset of fifo buffer
 				end if;
@@ -137,41 +137,48 @@ begin
 					S_RD_FROM_FIFO <= '1';			-- then start reading process until fifo is empty
 				end if;
 				
-				if FIFO_I_EMPTY = '1' then
-					S_RD_FROM_FIFO <= '0';
+				if FIFO_I_EMPTY = '1' then			--when fifo is empty stop reading data and wait until its almost full again
+					S_RD_FROM_FIFO <= '0';			
 				end if;
 				
 
-				if S_RD_FROM_FIFO = '1' then 
+				--this blocks reads one word from the in fifo and writes it into the SDRAM
+				if S_RD_FROM_FIFO = '1' then
+				
+					-- first get the data from the fifo (RD to high and back to low)
 					if S_WR_IN_PROGR = '0' then
 						S_WR_IN_PROGR <= '1';
 						FIFO_I_RD <= '1';
-					else
+					end if;
+					if FIFO_I_RD then				-- FIFO_I_RD must be high for only one cycle, so only one word gets clocked out
 						FIFO_I_RD <= '0';
 					end if;
 					
-					if S_WR_IN_PROGR = '1' then
-						if cmd_ready = '1' then
-							cmd_wr <= '1';
+					
+					
+					if S_WR_IN_PROGR = '1' then		-- when data from fifo is ready 
+						if cmd_ready = '1' then		-- wait for SDRAM until its ready for a new command
+							cmd_wr <= '1';			-- write word into SDRAM
 							cmd_strobe <= '1';
 							S_WR_IN_PROGR <= '0';
-							S_WR_DONE <= '1';
-						end if;
-					elsif S_WR_DONE = '1' then
-						if S_ADDRESS < x"FFFFF" then
-							S_ADDRESS <= S_ADDRESS + 1;
-						else
-							S_ADDRESS <= (others => '0');
-							FIFO_I_CLR <= '1';
-							S_OCCUPIED(to_integer(unsigned(TRACK))) <= '1';
-							REC_PLAY <= '0';
-							FIFO_I_WR <= '0';
-							REC_PLAY_FINISHED <= '1';
+							S_WR_DONE <= '1';		-- signs that write is done and address can be changed in the next cycle
 						end if;
 						
+					elsif S_WR_DONE = '1' then		-- when word has been written into fifo, increment address
 						cmd_wr <= '0';
 						cmd_strobe <= '0';
 						S_WR_DONE <= '0';
+						
+						if S_ADDRESS < x"FFFFF" then
+							S_ADDRESS <= S_ADDRESS + 1;
+						else									-- recording track is finished
+							S_ADDRESS <= (others => '0');		-- reset address
+							FIFO_I_CLR <= '1';					-- clear input fifo
+							S_OCCUPIED(to_integer(unsigned(TRACK))) <= '1';	-- set flag 
+							FIFO_I_WR <= '0';					-- stop buffering data
+							REC_PLAY_FINISHED <= '1';			-- this output shows that state can be changed to idle
+						end if;
+						
 					end if;
 				end if;
 				
@@ -188,61 +195,58 @@ begin
 
 
 			elsif STATE = PLAYING then
-				--if REC_PLAY = '0' then	CANNOT READ OUTPUT!					-- at the beginning set recording/playing flag
-				if STATE = "01" or STATE = "10" then-- at the beginning set recording/playing flag
-					REC_PLAY <= '1';				-- set recording/playing flag
+				if S_ADDRESS = x"00000" then				-- at the beginning
 					S_ADDRESS <= (others => '0');
-					--clear out fifo?? or is it already clear??
+					-- out fifo does not have to be cleared, because data gets written out until empty, so it will be empty
 				end if;
 				
-				--wait for cmd ready
+				--wait for cmd ready. if fifo almost full, wait until some data has been clocked out of fifo
 				if cmd_ready = '1' and S_RD_IN_PROGR = '0' and FIFO_O_ALMOST_FULL = '0' then
-					--cmd_address <= TRACK & S_ADDRESS;
 					cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));
-					cmd_strobe <= '1';
-					S_RD_IN_PROGR <= '0';		--shoulnt it be '1'?
+					cmd_strobe <= '1';						-- give read command to SDRAM. Must be high for only one cycle, so it gets cleared in the next block
+					S_RD_IN_PROGR <= '1';
 				end if;
 				
-				-- if cmd_strobe = '1' then
-					-- cmd_strobe <= '0';
-				-- end if;
+
 				
-				if S_RD_IN_PROGR = '1' then
-				
-					if data_out_ready = '1' then
-						FIFO_O_WR <= '1';
+				if S_RD_IN_PROGR = '1' then					-- read one word from SDRAM
+					cmd_strobe <= '0';						-- reset read command flag (it has been set the cycle before
+					if data_out_ready = '1' then			-- wait until data from SDRAM is ready
+						FIFO_O_WR <= '1';					-- write word into output fifo
 					end if;
 					
-					if FIFO_O_WR = '1' then
+					if FIFO_O_WR = '1' then					-- when word has been written into fifo
 					
 						FIFO_O_WR <= '0';
 						S_RD_IN_PROGR <= '0';
 						
-						if S_ADDRESS < x"FFFFF" then
+						if S_ADDRESS < x"FFFFF" then		-- icrement address
 							S_ADDRESS <= S_ADDRESS + 1;
-						else
+						else								-- when whole track has been shifted to fifo
 							S_ADDRESS <= '0';
-							REC_PLAY_FINISHED <= '1';
+							--REC_PLAY_FINISHED <= '1';		-- not yet because probably there is some rest data in fifo, so playing has not finished yet
 						end if;
 					end if;
 				end if;
 				
+				--when enough data is in fifo, start playing
 				if FIFO_O_ALMOST_FULL = '1' then
 					FIFO_O_RD <= '1';
 					S_PLAYING <= '1';
 				end if;
 				
+				--when fifo is empty, whole track has been played, so state can be changed to IDLE
 				if FIFO_O_EMPTY = '1' and S_PLAYING = '1' then
 					FIFO_O_RD <= '0';
 					S_PLAYING <= '0';
-					REC_PLAY <= '0';
+					REC_PLAY_FINISHED <= '1';
 				end if;
 
 
 			elsif STATE = IDLE then
-				REC_PLAY_FINISHED <= '0';
-				if DELETE = '1' then
-					S_OCCUPIED(TRACK) <= '0';
+				REC_PLAY_FINISHED <= '0';					-- FSM has changed STATE, so flag can be reseted
+				if DELETE = '1' then						-- delete chosen track
+					S_OCCUPIED(TRACK) <= '0';				-- set corresponding occupied flag to FREE
 				end if;
 				
 				
