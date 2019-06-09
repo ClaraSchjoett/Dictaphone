@@ -123,7 +123,7 @@ begin
 			-- Off by default (do not read/write)
 			cmd_strobe <= '0';
 
-			OCCUPIED <= S_OCCUPIED(to_integer(unsigned(TRACK)));
+			OCCUPIED <= S_OCCUPIED(to_integer(unsigned(TRACK)));	-- set or reset corresponding bit in OCCUPIED bit vector
 			
 			if STATE = RECORDING then
 				cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));
@@ -138,7 +138,6 @@ begin
 				end if;
 				
 				if FIFO_I_EMPTY = '1' then			--when fifo is empty stop reading data and wait until its almost full again
-					S_RD_FROM_FIFO <= '0';			
 				end if;
 				
 
