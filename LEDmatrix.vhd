@@ -11,19 +11,23 @@
 -- Standard   	: 	VHDL'93/02, Math Packages
 -- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
 -------------------------------------------------------------------------------
--- Description	: 	Testbench for standard FIFO-Buffer
+-- Description	: 	LED matrix control. The matrix displays the current recording
+--					or playing time.
 -------------------------------------------------------------------------------
 -- Revisions  	:
 -- Date        		Version		Author		Description
 -- 2019-06-04		1.0			Clara		Created
+-- 2019-06-08		1.1			Clara		Comments and inputs changed
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				System clock
 -- RST				Low active reset
--- STATE			2 bit coded state indicating PLAY, RECORD, DELETE
+-- STATE			2 bit coded state indicating PLAY, RECORD, IDLE
+-- MICLVL			Sound level of microphone is displayed as bar on second last row
+-- LSLVL			Sound level of audio jack is displayed as bar on last row
 --
 -- Outputs		:
--- LED				7x12 LED matrix (8th row alwas off, last two rows controlled by microphone)
+-- LED				10x12 LED matrix 
 -------------------------------------------------------------------------------
 
 library IEEE;
@@ -146,7 +150,7 @@ begin -- architecture rtl
 		LED(10,11) <= LSLVL(10);
 		LED(10,12) <= LSLVL(11);
 		
-		-- Hard wire third last row to grnd = switch it permanently off
+		-- Hard wire third last row to grnd = switch it permanently off (8th row alwas off)
 		LED(8,1) <= '0';
 		LED(8,2) <= '0';
 		LED(8,3) <= '0';
@@ -278,7 +282,6 @@ begin -- architecture rtl
 				LED(6,12)  <= '1';
 				LED(7,11)  <= '1';
 			when others => 	null;	-- LEDs off
-				--LED <= (others => (others => '0'));
 		end case;	 
 			
 		-- MUX for digit ones
@@ -399,7 +402,6 @@ begin -- architecture rtl
 				LED(6,6)   <= '1';
 				LED(7,5)   <= '1';
 			when others => null;		-- LEDs off
-				--LED <= (others => (others => '0'));
 		end case;
 		
 		-- MUX for digit tens
@@ -520,9 +522,6 @@ begin -- architecture rtl
 				LED(6,3)   <= '1';
 				LED(7,2)   <= '1';
 			when others => null;		-- LEDs off
-				--LED <= (others => (others => '0'));
 		end case;
-	
 	end process OL;
-	
 end architecture rtl;

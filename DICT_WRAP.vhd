@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-05-08
--- Last update	: 	2019-05-28
+-- Last update	: 	2019-06-09
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -16,7 +16,8 @@
 -- Date        		Version  	Author  	Description
 -- 2019-05-08		1.0			Clara		Created
 -- 2019-06-01		1.1			Peter		Added SER2PAR_SPI
--- 2019-06-04		1.2			Peter		Renamed Siganls
+-- 2019-06-04		1.2			Peter		Renamed Signals
+-- 2019-06-09		1.3			Clara		Changed order of instantiations
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				Onboard system clock (50MHz)
@@ -131,6 +132,7 @@ architecture str of DICT_WRAP is
 	signal	S_RAM_DIN			: std_logic_vector(15 downto 0);
 	signal	S_RAM_DOUT			: std_logic_vector(15 downto 0);
 	signal	S_RAM_DOUT_READY	: std_logic;
+	signal 	S_OCCUPIED			: std_logic;
 begin
 
 	-- assign inputs and outputs
@@ -149,80 +151,15 @@ begin
 	WS_I2S <= S_WS;
 
 
-
-
-	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					DIN 	=> S_FIFO_O_DO,
-					MCLK 	=> MCLK_I2S,
-					SCLK 	=> SCLK_I2S,
-					WS 		=> S_WS,
-					DOUT 	=> SDO_I2S);
-
-	DEB_PLAY: entity work.debouncer		-- direct instantiation of component debouncer for play button
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					I 		=> S_PLAY,
-					O		=> S_DPLAY);
-
-	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					I 		=> S_DLT,
-					O		=> S_DDLT);
-
-	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
-	port map(		CLK 	=> CLK,
-					RST 	=> RST,
-					I 		=> S_RCRD,
-					O		=> S_DRCRD);
-
-	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					I 		=> S_PLUS,
-					O		=> S_DPLUS);
-
-	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					I 		=> S_MINUS,
-					O		=> S_DMINUS);
-
-	MENU: entity work.FSM_MENU			-- direct instantiation of component FSM_MENU, the menu control
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					PLAY 	=> S_DPLAY,
-					DLT 	=> S_DDLT,
-					RCRD	=> S_DRCRD,
-					PLUS 	=> S_DPLUS,
-					MINUS	=> S_DMINUS,
-					STATE	=> S_STATE,
-					TRACK	=> S_TRACK);
-
-	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
-		port map(	TRACK 	=> S_TRACK,
-					SSD 	=> SSD);
-
-
-	PLVL: entity work.peak_level_ctrl	-- direct instantiation of component peak level control
-		port map(	clk 	=> CLK,
-					rst 	=> RST,
-					
-					audioDataL => S_FIFO_I_DI,
-					audioDataR => S_FIFO_O_DO,
-					audioLevelLedL => S_LLVL,
-					audioLevelLedR => S_RLVL);
-
+	-- Data path from mic to audio jack
 	ICNV: entity work.SER2PAR_SPI		-- direct instantiation of component conversion to parallel data
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					SCLK	=> SCLK_SPI,
-					DOUT 	=> S_FIFO_I_DI,
-					SDI 	=> SDI_SPI,
-					CS =	> CS_SPI);
-
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					SCLK			=> SCLK_SPI,
+					DOUT 			=> S_FIFO_I_DI,
+					SDI 			=> SDI_SPI,
+					CS 				=> CS_SPI);
+					
 	FIFO_IN: entity work.fifo
 		port map(	clk 			=> S_WS,
 					reset			=> (RST and not S_FIFO_I_CLR),
@@ -234,73 +171,7 @@ begin
 					empty 			=> open,
 					almost_full		=> S_FIFO_O_WR,
 					almost_empty	=> open);
-
-
-	FIFO_OUT: entity work.fifo
-		port map (	clk 			=> S_WS,
-					reset 			=> RST,
-					rd 				=> S_FIFO_O_RD,
-					wr 				=> S_FIFO_O_WR,
-					data_in 		=> S_FIFO_O_DI,
-					data_out 		=> S_FIFO_O_DO,
-					full 			=> open,
-					empty 			=> open,
-					almost_full 	=> S_FIFO_O_RD,
-					almost_empty	=> open);
 					
-	NAVI: entity work.LEDmatrix
-		port map(	CLK 	=> CLK,
-					RST 	=> RST,
-					STATE	=> S_STATE,
-					MICLVL	=> S_LLVL,
-					LSLVL	=> S_RLVL,
-					LED 	=> LED);
-	
-	
-	MEMC:	entity work.MEM_CTRL
-		port map(	CLK					=> CLK,
-					RST					=> RST,
-					STATE				=> S_STATE,
-					TRACK				=> S_TRACK,
-					DELETE				=> '0',
-					REC_PLAY			=> S_REC_PLAY,
-					OCCUPIED			=> open,
-					
-					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
-					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,
-					FIFO_I_RD			=> S_FIFO_I_RD,
-					FIFO_I_WR			=> S_FIFO_I_WR_EN,
-					FIFO_I_CLR			=> S_FIFO_I_CLR,
-					FIFO_O_EMPTY		=> S_FIFO_O_EMPTY,
-					FIFO_O_ALMOST_FULL	=> S_FIFO_O_ALMOST_FULL,
-					FIFO_O_RD			=> S_FIFO_O_RD_EN,
-					FIFO_O_WR			=> S_FIFO_O_WR,
-					
-					cmd_ready			=> S_RAM_READY,
-					cmd_strobe			=> S_RAM_STROBE,
-					cmd_wr				=> S_RAM_WR,
-					cmd_address			=> S_RAM_ADDRESS,
-					data_out_ready		=> S_RAM_DOUT_READY,
-
-	STRI:	entity work.strobe_gen
-		generic map (
-					INTERVAL	=> 1024);
-		
-		port map (	CLK		=> CLK,
-					RST		=> RST,
-					INT		=> S_FIFO_I_WR,
-					EN		=> S_FIFO_I_WR_EN);
-	
-	STRO:	entity work.strobe_gen
-		generic map (
-					INTERVAL	=> 1024);
-		
-		port map (	CLK		=> CLK,
-					RST		=> RST,
-					INT		=> S_FIFO_O_RD,
-					EN		=> S_FIFO_O_RD_EN);
-
-
 	SDRAM:	entity sdram_controller
 		port map (	clock			=> CLK,
 					reset_n			=> RST,
@@ -322,6 +193,146 @@ begin
 					sdram_addr		=> sdram_addr,
 					sdram_ba		=> sdram_ba,
 					sdram_data		=> sdram_data);
+					
+	FIFO_OUT: entity work.fifo
+		port map (	clk 			=> S_WS,
+					reset 			=> RST,
+					rd 				=> S_FIFO_O_RD,
+					wr 				=> S_FIFO_O_WR,
+					data_in 		=> S_FIFO_O_DI,
+					data_out 		=> S_FIFO_O_DO,
+					full 			=> open,
+					empty 			=> open,
+					almost_full 	=> S_FIFO_O_RD,
+					almost_empty	=> open);		
+
+	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					DIN 			=> S_FIFO_O_DO,
+					MCLK 			=> MCLK_I2S,
+					SCLK 			=> SCLK_I2S,
+					WS 				=> S_WS,
+					DOUT 			=> SDO_I2S);
+	-- End of data path
+					
+	-- Buttons for menu navigation
+	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					I 				=> S_MINUS,
+					O				=> S_DMINUS);
+					
+	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					I 				=> S_PLUS,
+					O				=> S_DPLUS);
+
+	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
+	port map(		CLK 			=> CLK,
+					RST 			=> RST,
+					I 				=> S_RCRD,
+					O				=> S_DRCRD);
+					
+	DEB_PLAY: entity work.debouncer		-- direct instantiation of component debouncer for play button
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					I 				=> S_PLAY,
+					O				=> S_DPLAY);
+
+	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					I 				=> S_DLT,
+					O				=> S_DDLT);
+	-- End of buttons
+
+	-- Menu navigation
+	MENU: entity work.FSM_MENU			-- direct instantiation of component FSM_MENU, the menu control
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					PLAY 			=> S_DPLAY,
+					DLT 			=> S_DDLT,
+					RCRD			=> S_DRCRD,
+					PLUS 			=> S_DPLUS,
+					MINUS			=> S_DMINUS,
+					STATE			=> S_STATE,
+					TRACK			=> S_TRACK);
+	-- End of menu navigation
+
+	-- Display elements
+	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
+		port map(	TRACK 			=> S_TRACK,
+					FREE_SLOTS 		=> open,
+					OCCUPIED		=> S_OCCUPIED
+					SSD 			=> SSD);
+
+	PLVL: entity work.peak_level_ctrl	-- direct instantiation of component peak level control
+		port map(	clk 			=> CLK,
+					rst 			=> RST,
+					
+					audioDataL 		=> S_FIFO_I_DI,
+					audioDataR 		=> S_FIFO_O_DO,
+					audioLevelLedL 	=> S_LLVL,
+					audioLevelLedR 	=> S_RLVL);
+					
+	NAVI: entity work.LEDmatrix
+		port map(	CLK 			=> CLK,
+					RST 			=> RST,
+					STATE			=> S_STATE,
+					MICLVL			=> S_LLVL,
+					LSLVL			=> S_RLVL,
+					LED 			=> LED);
+	-- End of display elements
+	
+	-- SDRAM management
+	MEMC: entity work.MEM_CTRL
+		port map(	CLK					=> CLK,
+					RST					=> RST,
+					STATE				=> S_STATE,
+					TRACK				=> S_TRACK,
+					DELETE				=> '0',
+					REC_PLAY			=> S_REC_PLAY,
+					OCCUPIED			=> S_OCCUPIED,
+					
+					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
+					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,
+					FIFO_I_RD			=> S_FIFO_I_RD,
+					FIFO_I_WR			=> S_FIFO_I_WR_EN,
+					FIFO_I_CLR			=> S_FIFO_I_CLR,
+					FIFO_O_EMPTY		=> S_FIFO_O_EMPTY,
+					FIFO_O_ALMOST_FULL	=> S_FIFO_O_ALMOST_FULL,
+					FIFO_O_RD			=> S_FIFO_O_RD_EN,
+					FIFO_O_WR			=> S_FIFO_O_WR,
+					
+					cmd_ready			=> S_RAM_READY,
+					cmd_strobe			=> S_RAM_STROBE,
+					cmd_wr				=> S_RAM_WR,
+					cmd_address			=> S_RAM_ADDRESS,
+					data_out_ready		=> S_RAM_DOUT_READY,
+	-- End of SDRAM management
+
+	-- Various
+	STRI: entity work.strobe_gen
+		generic map (
+					INTERVAL		=> 1024);
+		
+		port map (	CLK				=> CLK,
+					RST				=> RST,
+					INT				=> S_FIFO_I_WR,
+					EN				=> S_FIFO_I_WR_EN);
+	
+	STRO: entity work.strobe_gen
+		generic map (
+					INTERVAL		=> 1024);
+		
+		port map (	CLK				=> CLK,
+					RST				=> RST,
+					INT				=> S_FIFO_O_RD,
+					EN				=> S_FIFO_O_RD_EN);
+	-- End of various
+
 end; -- architecture str
 
 
