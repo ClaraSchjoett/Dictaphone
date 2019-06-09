@@ -16,6 +16,7 @@
 -- Date        		Version  	Author  	Description
 -- 2019-06-07		1.0			Peter		Created
 -- 2019-06-09		1.1			Peter		Debugged, added lots of comments
+-- 2019-06-09		1.1			Clara		Syntax errors corrected, compiled
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- TODO
@@ -122,22 +123,25 @@ begin
 		
 			-- Off by default (do not read/write)
 			cmd_strobe <= '0';
+			-- Zero by default
+			FIFO_I_RD <= '0';
+			FIFO_O_WR <= '0';
 
 			OCCUPIED <= S_OCCUPIED(to_integer(unsigned(TRACK)));	-- set or reset corresponding bit in OCCUPIED bit vector
 			
 			if STATE = RECORDING then
 				cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));
 				
-				if S_ADDRESS = x"00000" then 		-- at the beginning
-					FIFO_I_WR <= '1';				-- start buffering data into fifo
-					FIFO_I_CLR <= '0';				-- release reset of fifo buffer
+				if S_ADDRESS = x"00000" then 						-- at the beginning
+					FIFO_I_WR <= '1';								-- start buffering data into fifo
+					FIFO_I_CLR <= '0';								-- release reset of fifo buffer
 				end if;
 
-				if FIFO_I_ALMOST_FULL = '1' then	-- wait until the fifo buffer is almost full
-					S_RD_FROM_FIFO <= '1';			-- then start reading process until fifo is empty
+				if FIFO_I_ALMOST_FULL = '1' then					-- wait until the fifo buffer is almost full
+					S_RD_FROM_FIFO <= '1';							-- then start reading process until fifo is empty
 				end if;
 				
-				if FIFO_I_EMPTY = '1' then			--when fifo is empty stop reading data and wait until its almost full again
+				if FIFO_I_EMPTY = '1' then							--when fifo is empty stop reading data and wait until its almost full again
 				end if;
 				
 
@@ -149,49 +153,38 @@ begin
 						S_WR_IN_PROGR <= '1';
 						FIFO_I_RD <= '1';
 					end if;
-					if FIFO_I_RD then				-- FIFO_I_RD must be high for only one cycle, so only one word gets clocked out
-						FIFO_I_RD <= '0';
-					end if;
+					-- if FIFO_I_RD = '1' then							-- FIFO_I_RD must be high for only one cycle, so only one word gets clocked out
+						-- FIFO_I_RD <= '0';
+					-- end if;
 					
 					
 					
-					if S_WR_IN_PROGR = '1' then		-- when data from fifo is ready 
-						if cmd_ready = '1' then		-- wait for SDRAM until its ready for a new command
-							cmd_wr <= '1';			-- write word into SDRAM
+					if S_WR_IN_PROGR = '1' then						-- when data from fifo is ready 
+						if cmd_ready = '1' then						-- wait for SDRAM until its ready for a new command
+							cmd_wr <= '1';							-- write word into SDRAM
 							cmd_strobe <= '1';
 							S_WR_IN_PROGR <= '0';
-							S_WR_DONE <= '1';		-- signs that write is done and address can be changed in the next cycle
+							S_WR_DONE <= '1';						-- signs that write is done and address can be changed in the next cycle
 						end if;
 						
-					elsif S_WR_DONE = '1' then		-- when word has been written into fifo, increment address
+					elsif S_WR_DONE = '1' then						-- when word has been written into fifo, increment address
 						cmd_wr <= '0';
 						cmd_strobe <= '0';
 						S_WR_DONE <= '0';
 						
 						if S_ADDRESS < x"FFFFF" then
 							S_ADDRESS <= S_ADDRESS + 1;
-						else									-- recording track is finished
-							S_ADDRESS <= (others => '0');		-- reset address
-							FIFO_I_CLR <= '1';					-- clear input fifo
+						else										-- recording track is finished
+							S_ADDRESS <= (others => '0');			-- reset address
+							FIFO_I_CLR <= '1';						-- clear input fifo
 							S_OCCUPIED(to_integer(unsigned(TRACK))) <= '1';	-- set flag 
-							FIFO_I_WR <= '0';					-- stop buffering data
-							REC_PLAY_FINISHED <= '1';			-- this output shows that state can be changed to idle
+							FIFO_I_WR <= '0';						-- stop buffering data
+							REC_PLAY_FINISHED <= '1';				-- this output shows that state can be changed to idle
 						end if;
 						
 					end if;
 				end if;
 				
-
-
-
-
-
-
-
-
-
-
-
 
 			elsif STATE = PLAYING then
 				if S_ADDRESS = x"00000" then				-- at the beginning
@@ -214,15 +207,15 @@ begin
 						FIFO_O_WR <= '1';					-- write word into output fifo
 					end if;
 					
-					if FIFO_O_WR = '1' then					-- when word has been written into fifo
-					
-						FIFO_O_WR <= '0';
+					--if FIFO_O_WR = '1' then					-- when word has been written into fifo
+					if S_WR_DONE = '1' then
+						--FIFO_O_WR <= '0';
 						S_RD_IN_PROGR <= '0';
 						
-						if S_ADDRESS < x"FFFFF" then		-- icrement address
+						if S_ADDRESS < x"FFFFF" then		-- increment address
 							S_ADDRESS <= S_ADDRESS + 1;
 						else								-- when whole track has been shifted to fifo
-							S_ADDRESS <= '0';
+							S_ADDRESS <= (others => '0');
 							--REC_PLAY_FINISHED <= '1';		-- not yet because probably there is some rest data in fifo, so playing has not finished yet
 						end if;
 					end if;
@@ -245,7 +238,7 @@ begin
 			elsif STATE = IDLE then
 				REC_PLAY_FINISHED <= '0';					-- FSM has changed STATE, so flag can be reseted
 				if DELETE = '1' then						-- delete chosen track
-					S_OCCUPIED(TRACK) <= '0';				-- set corresponding occupied flag to FREE
+					S_OCCUPIED(to_integer(unsigned(TRACK))) <= '0';	-- set corresponding occupied flag to FREE
 				end if;
 				
 				
@@ -255,31 +248,3 @@ begin
 
 
 end; -- architecture str
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
