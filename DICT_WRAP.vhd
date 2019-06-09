@@ -142,7 +142,7 @@ begin
 	S_RCRD <= not RCRD;
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
-	S_TRACK <= S_TRACK
+	S_TRACK <= S_TRACK;
 
 
 	S_FIFO_I_WR <= '1';
@@ -265,7 +265,7 @@ begin
 	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
 		port map(	TRACK 			=> S_TRACK,
 					FREE_SLOTS 		=> open,
-					OCCUPIED		=> S_OCCUPIED
+					OCCUPIED		=> S_OCCUPIED,
 					SSD 			=> SSD);
 
 	PLVL: entity work.peak_level_ctrl	-- direct instantiation of component peak level control
@@ -310,22 +310,22 @@ begin
 					cmd_strobe			=> S_RAM_STROBE,
 					cmd_wr				=> S_RAM_WR,
 					cmd_address			=> S_RAM_ADDRESS,
-					data_out_ready		=> S_RAM_DOUT_READY,
+					data_out_ready		=> S_RAM_DOUT_READY);
 	-- End of SDRAM management
 
 	-- Various
-	STRI: entity work.strobe_gen
+	STRI: entity work.strobe_gen(rtl)
 		generic map (
-					INTERVAL		=> 1024);
+					INTERVAL		=> 1024)
 		
 		port map (	CLK				=> CLK,
 					RST				=> RST,
 					INT				=> S_FIFO_I_WR,
 					EN				=> S_FIFO_I_WR_EN);
 	
-	STRO: entity work.strobe_gen
+	STRO: entity work.strobe_gen(rtl)
 		generic map (
-					INTERVAL		=> 1024);
+					INTERVAL		=> 1024)
 		
 		port map (	CLK				=> CLK,
 					RST				=> RST,

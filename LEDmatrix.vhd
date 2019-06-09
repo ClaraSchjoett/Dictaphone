@@ -66,7 +66,7 @@ begin -- architecture rtl
 			CLK			=> CLK,
 			RST			=> RST,
 			IMP			=> impulse,
-			EN			=> '1';);
+			EN			=> '1');
 
 	-- Clock in new values into registers
 	-- Type: Sequential

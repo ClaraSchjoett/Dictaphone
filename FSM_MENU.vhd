@@ -53,7 +53,7 @@ entity FSM_MENU is
 			
 			DELETE				: out std_logic;
 			STATE				: out std_logic_vector(1 downto 0);
-			TRACK				: out std_logic_vector(3 downto 0)
+			TRACK				: out std_logic_vector(3 downto 0);
 			FREE_SLOTS			: out std_logic_vector(4 downto 0));
 
 end entity FSM_MENU;
