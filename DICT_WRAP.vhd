@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-05-08
--- Last update	: 	2019-06-09
+-- Last update	: 	2019-06-10
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -18,6 +18,7 @@
 -- 2019-06-01		1.1			Peter		Added SER2PAR_SPI
 -- 2019-06-04		1.2			Peter		Renamed Signals
 -- 2019-06-09		1.3			Clara		Changed order of instantiations
+-- 2019-06-10		1.4			Clara		Added comments
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				Onboard system clock (50MHz)
@@ -44,8 +45,20 @@
 -- SSD				Seven segment display control
 -- LED				LED matrix control
 
--------------------------------------------------------------------------------
+-- sdram_clk      	SDRAM clock (half speed of clock)
+-- sdram_cke      	clock enable
+-- sdram_cs_n     	(low-active) chip select
+-- sdram_ras_n    	(low-active) row access strobe
+-- sdram_cas_n 		(low-active) column access strobe
+-- sdram_we_n 		(low-active) write enable
+-- sdram_dqm_n  	data mask
+-- sdram_addr   	row/column address
+-- sdram_ba  		bank address
+-- sdram_data   	data input/output
 
+-- Inputs/Outputs	:
+-- sdram_data		data input/output
+-------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -53,10 +66,8 @@ use IEEE.NUMERIC_STD.ALL;
 --use IEEE.std_logic_arith.all;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-
 -- Own packages
 use work.gecko4_education_pkg.all;
-
 
 entity DICT_WRAP is
 		
@@ -74,11 +85,11 @@ entity DICT_WRAP is
 			WS_I2S		: out std_logic;						-- word select (48.8kHz)
 			SDO_I2S		: out std_logic;						-- serial data out for I2S
 			SSD			: out std_logic_vector(31 downto 0);	-- Seven segment display control
-			LED			: out std_logic_matrix(1 to 10, 1 to 12);
+			LED			: out std_logic_matrix(1 to 10, 1 to 12); -- LED matrix 10x12
 
-			SCLK_SPI	: out std_logic;
-			CS_SPI		: out std_logic;
-			SDI_SPI		: in  std_logic;
+			SCLK_SPI	: out std_logic;						-- serial clock for SPI (12.5MHz)
+			CS_SPI		: out std_logic;						-- Chip Select; is connected to PMOD Mic (Slave)
+			SDI_SPI		: in  std_logic;						-- serial data in
 			
 			-- SDRAM interface
 			sdram_clk	: out std_logic;     					-- SDRAM clock (half speed of clock)
@@ -116,10 +127,6 @@ architecture str of DICT_WRAP is
 	signal S_DPLUS				: std_logic;
 	signal S_DMINUS				: std_logic;
 	
-	signal S_TRACK				: std_logic_vector(3 downto 0);
-
-	signal S_STATE				: std_logic_vector(1 downto 0);
-
 	-- FIFO control signals
 	signal S_FIFO_I_RD			: std_logic;
 	signal S_FIFO_I_RD_EN		: std_logic;
@@ -142,23 +149,23 @@ architecture str of DICT_WRAP is
 	signal S_LLVL				: std_logic_vector(11 downto 0);
 	signal S_RLVL				: std_logic_vector(11 downto 0);
 
-
-	signal	S_REC_PLAY_FINISHED	: std_logic;
+	-- SDRAM signals
+	signal S_RAM_READY			: std_logic;
+	signal S_RAM_STROBE			: std_logic;
+	signal S_RAM_WR				: std_logic;
+	signal S_RAM_ADDRESS		: unsigned(23 downto 0);
+	signal S_RAM_DIN			: std_logic_vector(15 downto 0);
+	signal S_RAM_DOUT			: std_logic_vector(15 downto 0);
+	signal S_RAM_DOUT_READY		: std_logic;
+	signal S_OCCUPIED			: std_logic;
 	
-	signal	S_RAM_READY			: std_logic;
-	signal	S_RAM_STROBE		: std_logic;
-	signal	S_RAM_WR			: std_logic;
-	signal	S_RAM_ADDRESS		: unsigned(23 downto 0);
-	signal	S_RAM_DIN			: std_logic_vector(15 downto 0);
-	signal	S_RAM_DOUT			: std_logic_vector(15 downto 0);
-	signal	S_RAM_DOUT_READY	: std_logic;
-	signal 	S_OCCUPIED			: std_logic;
+	-- Various
+	signal S_DELETE				: std_logic;	
+	signal S_FREE_SLOTS			: std_logic_vector(4 downto 0);
+	signal S_TRACK				: std_logic_vector(3 downto 0);
+	signal S_STATE				: std_logic_vector(1 downto 0);
+	signal S_REC_PLAY_FINISHED	: std_logic;
 	
-	signal	S_DELETE			: std_logic;	--delete selected track
-	signal	S_FREE_SLOTS		: std_logic_vector(4 downto 0);
-	
-	-- test signals
-	signal S_TEST_LED			: std_logic;
 begin
 
 	-- assign inputs and outputs
@@ -169,14 +176,11 @@ begin
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
 	
-	--S_FIFO_I_WR <= '1';
-	--S_FIFO_I_RD <= S_FIFO_O_WR;
-	
+	-- reset input fifo when RST = '0' or S_FIFO_I_CLR = '1'
 	S_FIFO_I_RST <= '1' when RST = '1' and S_FIFO_I_CLR = '0' else 
-					'0';	-- reset input fifo when RST = '0' or S_FIFO_I_CLR = '1'
+					'0';	
 	
 	WS_I2S <= S_WS;
-
 
 	-- Data path from mic to audio jack
 	ICNV: entity work.SER2PAR_SPI		-- direct instantiation of component conversion to parallel data
@@ -187,7 +191,7 @@ begin
 					SDI 				=> SDI_SPI,
 					CS 					=> CS_SPI);
 					
-	FIFO_IN: entity work.fifo
+	FIFO_IN: entity work.fifo			-- direct instantiation of component FIFO microphone
 		port map(	clk 				=> CLK,
 					reset				=> S_FIFO_I_RST,
 					rd 					=> S_FIFO_I_RD,
@@ -219,7 +223,7 @@ begin
 					data_out_ready		=> S_RAM_DOUT_READY,
 
 					-- SDRAM interface
-					sdram_clk			=> sdram_clk,		-- 25MHz, SDRAM clock
+					sdram_clk			=> sdram_clk,	
 					sdram_cke			=> sdram_cke,
 					sdram_cs_n			=> sdram_cs_n,
 					sdram_ras_n			=> sdram_ras_n,
@@ -230,7 +234,7 @@ begin
 					sdram_ba			=> sdram_ba,
 					sdram_data			=> sdram_data);
 					
-	FIFO_OUT: entity work.fifo
+	FIFO_OUT: entity work.fifo			-- direct instantiation of component FIFO loudspeaker
 		port map(	clk 				=> CLK,
 					reset 				=> RST,
 					rd 					=> S_FIFO_O_RD,
@@ -318,12 +322,9 @@ begin
 					audioLevelLedL 		=> S_LLVL,
 					audioLevelLedR 		=> S_RLVL);
 					
-	NAVI: entity work.LEDmatrix
+	NAVI: entity work.LEDmatrix			-- direct instantiation of component LED matrix control
 		port map(	CLK 				=> CLK,
 					RST 				=> RST,
-					
-					TEST_LED			=> S_TEST_LED,
-					
 					STATE				=> S_STATE,
 					MICLVL				=> S_LLVL,
 					LSLVL				=> S_RLVL,
@@ -331,7 +332,7 @@ begin
 	-- End of display elements
 	
 	-- SDRAM management
-	MEMC: entity work.MEM_CTRL
+	MEMC: entity work.MEM_CTRL			-- direct instantiation of component memory manager
 		port map(	CLK					=> CLK,
 					RST					=> RST,
 					STATE				=> S_STATE,
@@ -339,10 +340,7 @@ begin
 					DELETE				=> S_DELETE,
 					REC_PLAY_FINISHED	=> S_REC_PLAY_FINISHED,
 					OCCUPIED			=> S_OCCUPIED,
-					FREE_SLOTS			=> S_FREE_SLOTS,
-					
-					TEST_LED			=> S_TEST_LED,
-					
+					FREE_SLOTS			=> S_FREE_SLOTS,			
 					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
 					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,
 					FIFO_I_RD			=> S_FIFO_I_RD,
@@ -361,7 +359,7 @@ begin
 	-- End of SDRAM management
 
 	-- Various
-	STRI: entity work.strobe_gen(rtl)
+	STRI: entity work.strobe_gen(rtl)	-- direct instantiation of component strobe generator used as frequency divider
 		generic map(INTERVAL			=> 1024)
 		
 		port map(	CLK					=> CLK,
@@ -369,7 +367,7 @@ begin
 					IMP					=> S_FIFO_I_WR,
 					EN					=> S_FIFO_I_WR_EN);
 	
-	STRO: entity work.strobe_gen(rtl)
+	STRO: entity work.strobe_gen(rtl)	-- direct instantiation of component strobe generator used as frequency divider
 		generic map(INTERVAL			=> 1024)
 		
 		port map(	CLK					=> CLK,

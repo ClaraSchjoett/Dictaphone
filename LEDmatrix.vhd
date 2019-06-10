@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-06-04
--- Last update	: 	2019
+-- Last update	: 	2019-06-10
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
@@ -18,6 +18,7 @@
 -- Date        		Version		Author		Description
 -- 2019-06-04		1.0			Clara		Created
 -- 2019-06-08		1.1			Clara		Comments and inputs changed
+-- 2019-06-10		1.1			Clara		Dot implemented
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				System clock
@@ -46,18 +47,17 @@ entity LEDmatrix is
 			STATE	: in std_logic_vector(1 downto 0);	
 			MICLVL	: in std_logic_vector(11 downto 0);
 			LSLVL	: in std_logic_vector(11 downto 0);
-			
-			TEST_LED: in std_logic;
-
 			LED		: out std_logic_matrix(1 to 10, 1 to 12));
 
 end entity LEDmatrix;
 
 architecture rtl of LEDmatrix is
+
 	signal tenths_reg, tenths_next 	: std_logic_vector(3 downto 0);
 	signal ones_reg, ones_next		: std_logic_vector(3 downto 0);
 	signal tens_reg, tens_next		: std_logic_vector(3 downto 0);
 	signal impulse					: std_logic;
+	
 begin -- architecture rtl
 
 	-- Instantiate strobe generator for incrementing least signifcant digit (tenths)
@@ -84,7 +84,6 @@ begin -- architecture rtl
 			tens_reg 	<= tens_next;
 		end if;
 	end process REG;
-	
 	
 	-- Determine next value of registers (at next positive clock edge)
 	NSL: process(STATE, impulse, tenths_reg, ones_reg, tens_reg) is
@@ -119,7 +118,7 @@ begin -- architecture rtl
 	
 	-- Evaluate current value of tenths, ones and tens and write to LED matrix
 	-- Type: Combinational
-	OL : process (tenths_reg, ones_reg, tens_reg, MICLVL, LSLVL, TEST_LED) is	
+	OL : process (tenths_reg, ones_reg, tens_reg, MICLVL, LSLVL) is	
 	begin  -- process OL
 	
 		-- LEDs are off by default
@@ -152,19 +151,8 @@ begin -- architecture rtl
 		LED(10,11) <= LSLVL(10);
 		LED(10,12) <= LSLVL(11);
 		
-		-- Hard wire third last row to grnd = switch it permanently off (8th row alwas off)
-		LED(8,1) <= TEST_LED;
-		LED(8,2) <= '0';
-		LED(8,3) <= '0';
-		LED(8,4) <= '0';
-		LED(8,5) <= '0';
-		LED(8,6) <= '0';
-		LED(8,7) <= '0';
-		LED(8,8) <= '0';
-		LED(8,9) <= '0';
-		LED(8,10) <= '0';
-		LED(8,11) <= '0';
-		LED(8,12) <= '0';
+		-- Hard wire dot point to VCC (always on)
+		LED(7,8) <= '1';
 		
 		-- MUX for digit tenths 
 		case (tenths_reg) is
@@ -283,7 +271,7 @@ begin -- architecture rtl
 				LED(6,10)  <= '1';
 				LED(6,12)  <= '1';
 				LED(7,11)  <= '1';
-			when others => 	null;	-- LEDs off
+			when others => 	null; -- LEDs off
 		end case;	 
 			
 		-- MUX for digit ones
@@ -403,7 +391,7 @@ begin -- architecture rtl
 				LED(6,4)   <= '1';
 				LED(6,6)   <= '1';
 				LED(7,5)   <= '1';
-			when others => null;		-- LEDs off
+			when others => null; -- LEDs off
 		end case;
 		
 		-- MUX for digit tens
@@ -523,7 +511,7 @@ begin -- architecture rtl
 				LED(6,1)   <= '1';
 				LED(6,3)   <= '1';
 				LED(7,2)   <= '1';
-			when others => null;		-- LEDs off
+			when others => null; -- LEDs off
 		end case;
 	end process OL;
 end architecture rtl;

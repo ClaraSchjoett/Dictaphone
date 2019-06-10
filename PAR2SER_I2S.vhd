@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-05-08
--- Last update	: 	2019-05-13
+-- Last update	: 	2019-05-12
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -- Sources		:	https://surf-vhdl.com/how-to-implement-a-parallel-to-serial-converter/
@@ -32,8 +32,7 @@
 -- SCLK				Serial clock (bit clock, 3.125MHz)  
 -- WS				Word select signal for I2S bus. High: R channel, low: L channel (48.8kHz)
 -- DOUT				Serial data out. Side note: resolution of DAC is 24 bit, 
---					thus we must shift incoming 16 bit vector 8 bits left. 
-        
+--					thus we must shift incoming 16 bit vector 8 bits left.    
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -54,8 +53,8 @@ entity PAR2SER_I2S is
 				SCLK			: out std_logic;	-- serial clock (bit clock, 3.125MHz)
 				WS				: out std_logic;	-- word select (left-right clock, 48.8kHz)
 				RST             : in std_logic;		-- asynchronous active low reset
-				DIN          	: in std_logic_vector(BITWIDTHIN-1 downto 0);
-				DOUT          	: out std_logic);
+				DIN          	: in std_logic_vector(BITWIDTHIN-1 downto 0);	-- parallel data in
+				DOUT          	: out std_logic);	-- serial data out
 
 end PAR2SER_I2S;
 
@@ -123,8 +122,5 @@ begin -- architecture rtl
 				end if;
 			end if;
 		end if;
-		
 	end process; -- CONVERSION
-
-	
 end rtl;

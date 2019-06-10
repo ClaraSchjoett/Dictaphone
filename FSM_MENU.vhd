@@ -6,16 +6,17 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH-TI-EKT
 -- Created    	: 	2019-05-13
--- Last update	: 	2019-05-29
+-- Last update	: 	2019-06-10
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
--- Description	: 	Finite State Machine for menu management of dictaphone
+-- Description	: 	Menu navigation of dictaphone
 -------------------------------------------------------------------------------
 -- Revisions  	:
 -- Date				Version		Author  	Description
 -- 2019-05-13		1.0      	Clara		Created
 -- 2019-06-07		1.1			Peter		Condition for states changed to fulfill requirements
+-- 2019-06-10		1.1			Clara 		Refinements
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- CLK				Onboard system clock
@@ -25,20 +26,18 @@
 -- DLT				DELETING selected track (debounced impulse, clock cycle duration)
 -- PLUS				One track forwards (debounced impulse, clock cycle duration)
 -- MINUS			One track backwards (debounced impulse, clock cycle duration)
--- REC_PLAY_FINISHED
--- OCCUPIED
+-- REC_PLAY_FINISHED Strobe when recording or track is finished
+-- OCCUPIED			Low if selected track is free, high if occupied
 --
 -- Outputs:
+-- DELETE			Delete selected track
 -- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING
 -- TRACK			Seven segment display control, SEG1 and SEG1
--- FREE_SLOTS		Seven segment display control, SEG3 and SEG4
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
 -------------------------------------------------------------------------------
-
 entity FSM_MENU is
 
   port (	CLK        			: in std_logic;				-- system clock (50 MHz)
@@ -58,15 +57,13 @@ entity FSM_MENU is
 			TRACK				: out std_logic_vector(3 downto 0));
 
 end entity FSM_MENU;
-
 -------------------------------------------------------------------------------
-
 architecture rtl of FSM_MENU is
 
 	type states is (PLAYING, RECORDING, IDLE); 				-- declare new type "states". We don't know how many bits Quartus chooses to represent these states (could be 2 or could be "one hot")
 	signal state_next, state_reg: states;					-- state register
 	signal track_next, track_number: unsigned(3 downto 0); 
-	signal S_GOTO_IDLE	: std_logic;
+
 begin -- architecture rtl
 
 	-- state registers for menu state and track number
@@ -75,14 +72,9 @@ begin -- architecture rtl
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
 			track_number <= "0000";
-			--DELETE <= '0';
-			S_GOTO_IDLE <= '0';
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
 			track_number <= track_next;
-			if falling_edge(REC_PLAY_FINISHED) then
-				S_GOTO_IDLE <= '1';
-			end if;
 		end if;
 	end process REG;
 		
@@ -120,7 +112,7 @@ begin -- architecture rtl
 				 "00" when others;		
 				 
 	-- Track number control, must be purely combinatorial!
-	TRACK_PROC: process(PLUS, MINUS, track_number)
+	TRACK_PROC: process(PLUS, MINUS, track_number, state_reg)
 	begin -- process TRACK_PROC
 		track_next <= track_number;
 		if state_reg = IDLE	then							-- only change track in IDLE
@@ -139,8 +131,6 @@ begin -- architecture rtl
 	end process TRACK_PROC;
 		
 	-- evalutation of current track number for display on SSD
-	TRACK <= std_logic_vector(track_number);
-	-- test line, delete when finished
-
+	TRACK <= std_logic_vector(track_number);				-- Typecast from unsigned to std_logic_vector
 
 end architecture rtl;

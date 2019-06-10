@@ -19,7 +19,7 @@
 -- Revisions  	:
 -- Date        		Version		Author	Description
 -- 2019-05-20		1.0			Peter	Created
--- 2019-06-01		1.1			Clara	Reset changed to low-active, improved formatting, more comments
+-- 2019-06-01		1.1			Clara	Reset changed to low-active
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- clk				Audio sampling rate

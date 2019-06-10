@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH-TI-EKT
 -- Created    	: 	2019-05-26
--- Last update	: 	2019-05-26
+-- Last update	: 	2019-06-07
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -------------------------------------------------------------------------------
@@ -22,6 +22,7 @@
 -- Inputs:
 -- TRACK				Current track number, represented by 4 bits
 -- FREE_SLOTS			Number of free slots, represented by 5 bits
+-- OCCUPIED				High if current track holds a recording
 --
 -- Outputs:
 -- SSD					Seven segment display control. 32 bits (4x8 bits)
