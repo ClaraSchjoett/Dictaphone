@@ -152,6 +152,9 @@ architecture str of DICT_WRAP is
 	signal	S_RAM_DOUT			: std_logic_vector(15 downto 0);
 	signal	S_RAM_DOUT_READY	: std_logic;
 	signal 	S_OCCUPIED			: std_logic;
+	
+	signal	S_DELETE			: std_logic;	--delet selected track
+	signal	S_FREE_SLOTS		: std_logic_vector(4 downto 0);
 begin
 
 	-- assign inputs and outputs
@@ -285,7 +288,8 @@ begin
 					MINUS				=> S_DMINUS,
 					
 					REC_PLAY_FINISHED 	=> S_REC_PLAY_FINISHED,
-					OCCUPIED			= S_OCCUPIED,
+					OCCUPIED			=> S_OCCUPIED,
+					DELETE				=> S_DELETE,
 					
 					STATE				=> S_STATE,
 					TRACK				=> S_TRACK);
@@ -294,7 +298,7 @@ begin
 	-- Display elements
 	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
 		port map(	TRACK 				=> S_TRACK,
-					FREE_SLOTS 			=> open,
+					FREE_SLOTS 			=> S_FREE_SLOTS,
 					OCCUPIED			=> S_OCCUPIED,
 					SSD 				=> SSD);
 
@@ -325,6 +329,7 @@ begin
 					DELETE				=> '0',
 					REC_PLAY_FINISHED	=> S_REC_PLAY_FINISHED,
 					OCCUPIED			=> S_OCCUPIED,
+					FREE_SLOTS			=> S_FREE_SLOTS,
 					
 					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
 					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,
