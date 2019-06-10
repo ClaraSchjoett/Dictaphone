@@ -19,7 +19,25 @@
 -- 2019-06-09		1.1			Clara		Syntax errors corrected, compiled
 -------------------------------------------------------------------------------
 -- Inputs		:
--- TODO
+-- CLK				Onboard system clock
+-- RST				Resets the state to default state
+-- STATE			Current state (from FSM_MENU)
+-- TRACK			Current track number (from FSM_MENU)
+-- DELETE			Delete selected track from SDRAM and update S_OCCUPIED
+
+-- FIFO_I_EMPTY		high when input fifo empty
+-- FIFO_I_ALMOST_FULL high when input fifo more than 3/4 full	
+-- FIFO_O_EMPTY		high when output fifo empty
+-- FIFO_O_ALMOST_FULL high when output fifo more than 3/4 full
+
+-- cmd_ready		new command can be processed (from SDRAM)
+-- data_out_ready	new data from SDRAM is ready ( from SDRAM)
+			
+--
+-- Outputs		:
+-- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING
+-- TRACK			Seven segment display control, SEG1 and SEG1
+-- FREE_SLOTS		Seven segment display control, SEG3 and SEG4
 
 -------------------------------------------------------------------------------
 
@@ -47,6 +65,7 @@ entity MEM_CTRL is
 			REC_PLAY_FINISHED	: out std_logic;					-- is high when playing/recording finished and changes
 																		-- back to low when state has changed to IDLE
 			OCCUPIED			: out std_logic;					-- is high if selected track is occupied
+			FREE_SLOTS			: out std_logic_vector(4 downto 0);	-- Number of free tracks to display on SSD
 			
 			FIFO_I_EMPTY		: in std_logic;						-- input fifo empty
 			FIFO_I_ALMOST_FULL	: in std_logic;						-- input fifo more than 75% full
@@ -59,13 +78,12 @@ entity MEM_CTRL is
 			FIFO_O_RD			: out std_logic;					-- enable reading data from output fifo to loudspeaker
 			FIFO_O_WR			: out std_logic;					-- write data into output fifo
 			
-
-			cmd_ready		: in std_logic;							-- new command can be processed
-			cmd_strobe		: out std_logic;						-- issue a new read/write command
-			cmd_wr			: out std_logic;						-- write access
-			cmd_address		: out unsigned(23 downto 0);			-- word address for read/write
+			cmd_ready			: in std_logic;						-- new command can be processed
+			cmd_strobe			: out std_logic;					-- issue a new read/write command
+			cmd_wr				: out std_logic;					-- write access
+			cmd_address			: out unsigned(23 downto 0);		-- word address for read/write
 			
-			data_out_ready	: in std_logic);						-- new data from SDRAM is ready
+			data_out_ready		: in std_logic);					-- new data from SDRAM is ready
 
 end entity MEM_CTRL;
 
