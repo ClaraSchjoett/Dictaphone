@@ -75,7 +75,7 @@ begin -- architecture rtl
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
 			track_number <= "0000";
-			DELETE <= '0';
+			--DELETE <= '0';
 			S_GOTO_IDLE <= '0';
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
@@ -87,23 +87,24 @@ begin -- architecture rtl
 	end process REG;
 		
 	-- next state logic MUST BE PURELY COMBINATORIAL!
-	NSL: process(PLAY, RCRD, DLT, state_reg)
-	begin -- process Next State Logic
+	NSL: process(PLAY, RCRD, DLT, state_reg, OCCUPIED, REC_PLAY_FINISHED)
+	begin -- process NSL
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
+		DELETE <= '0';
 		case state_reg is
 			when IDLE =>									-- when the state is IDLE, the condition for it to change TODO
 				if PLAY = '1' and OCCUPIED = '1' then
 					state_next <= PLAYING;
 				elsif RCRD = '1' and OCCUPIED = '0' then 
 					state_next <= RECORDING;
+				elsif DLT = '1' and OCCUPIED = '1' then
+					DELETE <= '1';
 				end if;
-			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
-				-- TODO
+			when PLAYING =>									-- when the state is PLAYING, go back to IDLE when strobe at REC_PLAY_FINISHED
 				if REC_PLAY_FINISHED = '1' then 
 					state_next <= IDLE;
 				end if;
-			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
-				-- TODO
+			when RECORDING =>								-- when the state is RECORDING, go back to IDLE when strobe at REC_PLAY_FINISHED
 				if REC_PLAY_FINISHED = '1' then
 					state_next <= IDLE;
 				end if;
@@ -120,7 +121,7 @@ begin -- architecture rtl
 				 
 	-- Track number control, must be purely combinatorial!
 	TRACK_PROC: process(PLUS, MINUS, track_number)
-	begin -- process TRACK
+	begin -- process TRACK_PROC
 		track_next <= track_number;
 		if state_reg = IDLE	then							-- only change track in IDLE
 			if PLUS = '1' then

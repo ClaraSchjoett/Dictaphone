@@ -156,6 +156,9 @@ architecture str of DICT_WRAP is
 	
 	signal	S_DELETE			: std_logic;	--delete selected track
 	signal	S_FREE_SLOTS		: std_logic_vector(4 downto 0);
+	
+	-- test signals
+	signal S_TEST_LED			: std_logic;
 begin
 
 	-- assign inputs and outputs
@@ -318,6 +321,9 @@ begin
 	NAVI: entity work.LEDmatrix
 		port map(	CLK 				=> CLK,
 					RST 				=> RST,
+					
+					TEST_LED			=> S_TEST_LED,
+					
 					STATE				=> S_STATE,
 					MICLVL				=> S_LLVL,
 					LSLVL				=> S_RLVL,
@@ -334,6 +340,8 @@ begin
 					REC_PLAY_FINISHED	=> S_REC_PLAY_FINISHED,
 					OCCUPIED			=> S_OCCUPIED,
 					FREE_SLOTS			=> S_FREE_SLOTS,
+					
+					TEST_LED			=> S_TEST_LED,
 					
 					FIFO_I_EMPTY		=> S_FIFO_I_EMPTY,
 					FIFO_I_ALMOST_FULL	=> S_FIFO_I_ALMOST_FULL,

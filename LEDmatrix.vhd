@@ -46,6 +46,8 @@ entity LEDmatrix is
 			STATE	: in std_logic_vector(1 downto 0);	
 			MICLVL	: in std_logic_vector(11 downto 0);
 			LSLVL	: in std_logic_vector(11 downto 0);
+			
+			TEST_LED: in std_logic;
 
 			LED		: out std_logic_matrix(1 to 10, 1 to 12));
 
@@ -85,7 +87,7 @@ begin -- architecture rtl
 	
 	
 	-- Determine next value of registers (at next positive clock edge)
-	NSL: process(STATE, impulse, tenths_reg, ones_reg, tens_reg)is
+	NSL: process(STATE, impulse, tenths_reg, ones_reg, tens_reg) is
 	begin -- process NSL
 		tenths_next <= tenths_reg;				-- this assignment is used in case of no state IMP. 
 		ones_next	<= ones_reg;				-- Always the last assignment is valid in a process!
@@ -117,7 +119,7 @@ begin -- architecture rtl
 	
 	-- Evaluate current value of tenths, ones and tens and write to LED matrix
 	-- Type: Combinational
-	OL : process (tenths_reg, ones_reg, tens_reg, MICLVL, LSLVL) is	
+	OL : process (tenths_reg, ones_reg, tens_reg, MICLVL, LSLVL, TEST_LED) is	
 	begin  -- process OL
 	
 		-- LEDs are off by default
@@ -151,7 +153,7 @@ begin -- architecture rtl
 		LED(10,12) <= LSLVL(11);
 		
 		-- Hard wire third last row to grnd = switch it permanently off (8th row alwas off)
-		LED(8,1) <= '0';
+		LED(8,1) <= TEST_LED;
 		LED(8,2) <= '0';
 		LED(8,3) <= '0';
 		LED(8,4) <= '0';

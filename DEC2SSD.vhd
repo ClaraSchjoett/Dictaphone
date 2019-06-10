@@ -48,8 +48,8 @@ begin -- architecture rtl
 	
 	-- set 3 dots to zero 
 	SSD(31) <= '0';
-	SSD(23) <= OCCUPIED;
-	SSD(15) <= '0';
+	SSD(23) <= '0';
+	SSD(15) <= OCCUPIED;
 	SSD(7)  <= '0';
 	
 	-- Switch-case must be encapsulated inside a process to work!				 

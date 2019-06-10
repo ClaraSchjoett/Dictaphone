@@ -73,6 +73,10 @@ entity MEM_CTRL is
 			DELETE				: in std_logic;						-- high pulse deletes selected track
 			REC_PLAY_FINISHED	: out std_logic;					-- is high when playing/recording finished and changes
 																		-- back to low when state has changed to IDLE
+			
+			TEST_LED			: out std_logic;
+			
+			
 			OCCUPIED			: out std_logic;					-- is high if selected track is occupied
 			FREE_SLOTS			: out std_logic_vector(4 downto 0);	-- Number of free tracks to display on SSD
 			
@@ -109,6 +113,9 @@ architecture str of MEM_CTRL is
 	signal S_RD_IN_PROGR	: std_logic;						-- reading a word from SDRAM
 	signal S_PLAYING		: std_logic;						-- playing data from output fifo to loudspeaker
 
+	signal S_FIFO_O_WR		: std_logic;
+	
+	signal S_ALL_DATA_READ	: std_logic;
 	--constants representing states
 	constant IDLE		: std_logic_vector(1 downto 0)	:= "00";
 	constant PLAYING	: std_logic_vector(1 downto 0)	:= "01";
@@ -119,6 +126,9 @@ begin
 	
 	-- assign inputs and outputs
 	-- TODO
+	FIFO_O_WR <= S_FIFO_O_WR;
+	TEST_LED <= S_RD_IN_PROGR;
+	
 	process(CLK, RST, STATE)
 		
 	begin
@@ -129,7 +139,7 @@ begin
 			FIFO_I_WR			<= '0';
 			FIFO_I_CLR			<= '0';
 			FIFO_O_RD			<= '0';
-			FIFO_O_WR			<= '0';
+			S_FIFO_O_WR			<= '0';
 			cmd_strobe			<= '0';
 			cmd_wr				<= '0';
 			cmd_address			<= (others => '0');
@@ -143,6 +153,7 @@ begin
 			
 			S_RD_IN_PROGR		<= '0';
 			S_PLAYING			<= '0';
+			S_ALL_DATA_READ		<= '0';
 			
 		elsif rising_edge(CLK) then
 		
@@ -150,7 +161,7 @@ begin
 			cmd_strobe <= '0';
 			-- Zero by default
 			FIFO_I_RD <= '0';
-			FIFO_O_WR <= '0';
+			S_FIFO_O_WR <= '0';
 
 			OCCUPIED <= S_OCCUPIED(to_integer(unsigned(TRACK)));	-- set or reset corresponding bit in OCCUPIED bit vector
 			
@@ -167,6 +178,7 @@ begin
 				end if;
 				
 				if FIFO_I_EMPTY = '1' then							--when fifo is empty stop reading data and wait until its almost full again
+					S_RD_FROM_FIFO <= '0';
 				end if;
 				
 
@@ -212,13 +224,9 @@ begin
 				
 
 			elsif STATE = PLAYING then
-				if S_ADDRESS = x"00000" then				-- at the beginning
-					S_ADDRESS <= (others => '0');
-					-- out fifo does not have to be cleared, because data gets written out until empty, so it will be empty
-				end if;
-				
+
 				--wait for cmd ready. if fifo almost full, wait until some data has been clocked out of fifo
-				if cmd_ready = '1' and S_RD_IN_PROGR = '0' and FIFO_O_ALMOST_FULL = '0' then
+				if cmd_ready = '1' and S_RD_IN_PROGR = '0' and FIFO_O_ALMOST_FULL = '0' and S_ALL_DATA_READ = '0' then
 					cmd_address <= unsigned(TRACK & std_logic_vector(S_ADDRESS));
 					cmd_strobe <= '1';						-- give read command to SDRAM. Must be high for only one cycle, so it gets cleared in the next block
 					S_RD_IN_PROGR <= '1';
@@ -229,18 +237,18 @@ begin
 				if S_RD_IN_PROGR = '1' then					-- read one word from SDRAM
 					cmd_strobe <= '0';						-- reset read command flag (it has been set the cycle before
 					if data_out_ready = '1' then			-- wait until data from SDRAM is ready
-						FIFO_O_WR <= '1';					-- write word into output fifo
+						S_FIFO_O_WR <= '1';					-- write word into output fifo
 					end if;
 					
-					--if FIFO_O_WR = '1' then					-- when word has been written into fifo
-					if S_WR_DONE = '1' then
-						--FIFO_O_WR <= '0';
+					if S_FIFO_O_WR = '1' then					-- when word has been written into fifo
+						S_FIFO_O_WR <= '0';
 						S_RD_IN_PROGR <= '0';
 						
 						if S_ADDRESS < x"FFFFF" then		-- increment address
 							S_ADDRESS <= S_ADDRESS + 1;
 						else								-- when whole track has been shifted to fifo
 							S_ADDRESS <= (others => '0');
+							S_ALL_DATA_READ <= '1';
 							--REC_PLAY_FINISHED <= '1';		-- not yet because probably there is some rest data in fifo, so playing has not finished yet
 						end if;
 					end if;
@@ -256,6 +264,11 @@ begin
 				if FIFO_O_EMPTY = '1' and S_PLAYING = '1' then
 					FIFO_O_RD <= '0';
 					S_PLAYING <= '0';
+					S_ALL_DATA_READ <= '0';
+					cmd_strobe <= '0';
+					S_RD_IN_PROGR <= '0';
+					S_FIFO_O_WR <= '0';
+					S_ADDRESS <= (others => '0');
 					REC_PLAY_FINISHED <= '1';
 				end if;
 

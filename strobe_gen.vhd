@@ -40,7 +40,8 @@ end strobe_gen;
 architecture rtl of strobe_gen is
 begin
 
-	STROBE: process(CLK, RST, EN) 
+
+	STROBE: process(CLK, RST) 
 		variable counter : integer := 1;
 	begin 
 		if(RST = '0')  then							-- Reset low active and asynchronous
@@ -54,9 +55,10 @@ begin
 					IMP <= '0';
 					counter := counter + 1;
 				end if;
+			else 
+				IMP <= '0';
+				counter := 1;
 			end if;
-		elsif falling_edge(EN) then
-			counter := 1;
 		end if;
 	end process;
 end rtl;
