@@ -74,13 +74,13 @@ begin -- architecture rtl
 	begin --process REG
 		if RST = '0' then									-- asynchronous reset (low active)
 			state_reg <= IDLE;
-			track_number <= "00001";
+			track_number <= "0000";
 			DELETE <= '0';
 			S_GOTO_IDLE <= '0';
 		elsif CLK'event and CLK = '1' then
 			state_reg <= state_next;
 			track_number <= track_next;
-			if falling_edge(REC_PLAY) then
+			if falling_edge(REC_PLAY_FINISHED) then
 				S_GOTO_IDLE <= '1';
 			end if;
 		end if;
@@ -119,23 +119,23 @@ begin -- architecture rtl
 				 "00" when others;		
 				 
 	-- Track number control, must be purely combinatorial!
-	TRACK: process(PLUS, MINUS, track_number)
+	TRACK_PROC: process(PLUS, MINUS, track_number)
 	begin -- process TRACK
 		track_next <= track_number;
-		if STATE = "00"	then									-- only change track in IDLE
+		if state_reg = IDLE	then							-- only change track in IDLE
 			if PLUS = '1' then
-				track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
-				if track_number = 15 then						-- Check for overflow
+				track_next <= track_number + 1; 			-- If no overflow, increment variable track_number
+				if track_number = 15 then					-- Check for overflow
 					track_next <= "0000";
-				end if;											-- variableA := variableA + 1; NOT ALLOWED
+				end if;										-- variableA := variableA + 1; NOT ALLOWED
 			elsif MINUS = '1' then
-				track_next <= track_number - 1;					-- If no underflow, decrement variable track_number
-				if track_number = 0	then						-- Check for underflow
+				track_next <= track_number - 1;				-- If no underflow, decrement variable track_number
+				if track_number = 0	then					-- Check for underflow
 					track_next <= "1111";
 				end if;
 			end if;
 		end if;
-	end process TRACK;
+	end process TRACK_PROC;
 		
 	-- evalutation of current track number for display on SSD
 	TRACK <= std_logic_vector(track_number);

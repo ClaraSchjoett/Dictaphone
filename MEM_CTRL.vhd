@@ -31,14 +31,24 @@
 -- FIFO_O_ALMOST_FULL high when output fifo more than 3/4 full
 
 -- cmd_ready		new command can be processed (from SDRAM)
--- data_out_ready	new data from SDRAM is ready ( from SDRAM)
+-- data_out_ready	new data from SDRAM is ready (from SDRAM)
 			
 --
 -- Outputs		:
--- STATE			Current state of FSM (two bits). '00' = IDLE, '01' = PLAYING, '10' = RECORDING
--- TRACK			Seven segment display control, SEG1 and SEG1
--- FREE_SLOTS		Seven segment display control, SEG3 and SEG4
+-- REC_PLAY_FINISHED high pulse when one track is finished (to FSM_MENU)
+-- OCCUPIED			high when current track is occupied (to DEC2SSD)
+-- FREE_SLOTS		number of free slots (to DEC2SSD)
 
+-- FIFO_I_RD 		high when reading from input fifo
+-- FIFO_I_WR		high when writing to input fifo
+-- FIFO_I_CLR		high when clearing input fifo
+
+-- FIFO_O_RD		high when reading from output fifo
+-- FIFO_I_WR		high when writing to output fifo
+
+-- cmd_strobe		high (one clk cycle) when issuing a new read/write command (to SDRAM=
+-- cmd_wr			high (one clk cycle) when write access required (to SDRAM)
+-- cmd_address		SDRAM address to write at (to SDRAM)
 -------------------------------------------------------------------------------
 
 
@@ -49,7 +59,6 @@ use IEEE.NUMERIC_STD.ALL;
 --This library caused an error message. 
 -- Here is the solution: https://www.edaboard.com/showthread.php?272826-more-thn-one-UseClause-imports-declaration-of-simple-name-quot-unsigned-quot-none-of-the-dec
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
-
 
 -- Own packages
 use work.gecko4_education_pkg.all;
@@ -105,10 +114,8 @@ architecture str of MEM_CTRL is
 	constant PLAYING	: std_logic_vector(1 downto 0)	:= "01";
 	constant RECORDING	: std_logic_vector(1 downto 0)	:= "10";
 
-
 begin
 
-	
 	
 	-- assign inputs and outputs
 	-- TODO
@@ -263,6 +270,20 @@ begin
 			end if;
 		end if;
 	end process;
-
+	
+	-- This process re-calculates number of free slots on every change of signal S_OCCUPIED
+	-- Type: combinational
+	-- Source: https://vhdlguru.blogspot.com/2017/10/count-number-of-1s-in-binary-number.html
+	FREE_PROC: process(S_OCCUPIED)
+		variable count : unsigned(4 downto 0) := "00000";
+	begin --process FREE_S
+		count := "00000";   								-- initialize count variable
+		for i in 0 to 15 loop   							-- for all the bits
+			if(S_OCCUPIED(i) = '0') then 					--check if the bit is '0'
+				count := count + 1; 						--if it's zero, increment the count.
+			end if;		
+		end loop;
+		FREE_SLOTS <= std_logic_vector(count);    			-- assign the count to output
+	end process FREE_PROC;
 
 end; -- architecture str

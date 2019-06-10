@@ -122,16 +122,17 @@ architecture str of DICT_WRAP is
 
 	-- FIFO control signals
 	signal S_FIFO_I_RD			: std_logic;
+	signal S_FIFO_I_RD_EN		: std_logic;
 	signal S_FIFO_I_WR			: std_logic;
 	signal S_FIFO_I_WR_EN		: std_logic;
 	
 	signal S_FIFO_I_EMPTY		: std_logic;
 	signal S_FIFO_I_ALMOST_FULL	: std_logic;
 	signal S_FIFO_I_CLR			: std_logic;
-
+	signal S_FIFO_I_RST			: std_logic;
 
 	signal S_FIFO_O_RD			: std_logic;
-	signal S_FIFO_I_RD_EN		: std_logic;
+	signal S_FIFO_O_RD_EN		: std_logic;
 	signal S_FIFO_O_WR			: std_logic;
 	signal S_FIFO_O_EMPTY		: std_logic;
 	signal S_FIFO_O_ALMOST_FULL	: std_logic;
@@ -153,7 +154,7 @@ architecture str of DICT_WRAP is
 	signal	S_RAM_DOUT_READY	: std_logic;
 	signal 	S_OCCUPIED			: std_logic;
 	
-	signal	S_DELETE			: std_logic;	--delet selected track
+	signal	S_DELETE			: std_logic;	--delete selected track
 	signal	S_FREE_SLOTS		: std_logic_vector(4 downto 0);
 begin
 
@@ -165,8 +166,11 @@ begin
 	S_PLUS <= not PLUS;
 	S_MINUS <= not MINUS;
 	
-	S_FIFO_I_WR <= '1';
-	S_FIFO_I_RD <= S_FIFO_O_WR;
+	--S_FIFO_I_WR <= '1';
+	--S_FIFO_I_RD <= S_FIFO_O_WR;
+	
+	S_FIFO_I_RST <= '1' when RST = '1' and S_FIFO_I_CLR = '0' else 
+					'0';	-- reset input fifo when RST = '0' or S_FIFO_I_CLR = '1'
 	
 	WS_I2S <= S_WS;
 
@@ -181,15 +185,15 @@ begin
 					CS 					=> CS_SPI);
 					
 	FIFO_IN: entity work.fifo
-		port map(	clk 				=> S_WS,
-					reset				=> (RST and not S_FIFO_I_CLR),
+		port map(	clk 				=> CLK,
+					reset				=> S_FIFO_I_RST,
 					rd 					=> S_FIFO_I_RD,
 					wr 					=> S_FIFO_I_WR,
 					data_in				=> S_FIFO_I_DI,
 					data_out			=> S_FIFO_I_DO,
 					full 				=> open,
-					empty 				=> open,
-					almost_full			=> S_FIFO_O_WR,
+					empty 				=> S_FIFO_I_EMPTY,
+					almost_full			=> S_FIFO_I_ALMOST_FULL,
 					almost_empty		=> open);
 					
 	SDRAM:	entity work.sdram_controller
@@ -203,78 +207,78 @@ begin
 					reset_n				=> RST,
 					
 					-- MEM_CTRL interface
-					cmd_ready		=> S_RAM_READY,
-					cmd_strobe		=> S_RAM_STROBE,
-					cmd_wr			=> S_RAM_WR,
-					cmd_address		=> S_RAM_ADDRESS,
-					cmd_data_in		=> S_FIFO_I_DO,
-					data_out		=> S_FIFO_O_DI,
-					data_out_ready	=> S_RAM_DOUT_READY,
+					cmd_ready			=> S_RAM_READY,
+					cmd_strobe			=> S_RAM_STROBE,
+					cmd_wr				=> S_RAM_WR,
+					cmd_address			=> S_RAM_ADDRESS,
+					cmd_data_in			=> S_FIFO_I_DO,
+					data_out			=> S_FIFO_O_DI,
+					data_out_ready		=> S_RAM_DOUT_READY,
 
 					-- SDRAM interface
-					sdram_clk		=> sdram_clk,		-- 25MHz, SDRAM clock
-					sdram_cke		=> sdram_cke,
-					sdram_cs_n		=> sdram_cs_n,
-					sdram_ras_n		=> sdram_ras_n,
-					sdram_cas_n		=> sdram_cas_n,
-					sdram_we_n		=> sdram_we_n,
-					sdram_dqm_n		=> sdram_dqm_n,
-					sdram_addr		=> sdram_addr,
-					sdram_ba		=> sdram_ba,
-					sdram_data		=> sdram_data);
+					sdram_clk			=> sdram_clk,		-- 25MHz, SDRAM clock
+					sdram_cke			=> sdram_cke,
+					sdram_cs_n			=> sdram_cs_n,
+					sdram_ras_n			=> sdram_ras_n,
+					sdram_cas_n			=> sdram_cas_n,
+					sdram_we_n			=> sdram_we_n,
+					sdram_dqm_n			=> sdram_dqm_n,
+					sdram_addr			=> sdram_addr,
+					sdram_ba			=> sdram_ba,
+					sdram_data			=> sdram_data);
 					
 	FIFO_OUT: entity work.fifo
-		port map(	clk 			=> S_WS,
-					reset 			=> RST,
-					rd 				=> S_FIFO_O_RD,
-					wr 				=> S_FIFO_O_WR,
-					data_in 		=> S_FIFO_O_DI,
-					data_out 		=> S_FIFO_O_DO,
-					full 			=> open,
-					empty 			=> open,
-					almost_full 	=> S_FIFO_O_RD,
-					almost_empty	=> open);		
+		port map(	clk 				=> CLK,
+					reset 				=> RST,
+					rd 					=> S_FIFO_O_RD,
+					wr 					=> S_FIFO_O_WR,
+					data_in 			=> S_FIFO_O_DI,
+					data_out 			=> S_FIFO_O_DO,
+					full 				=> open,
+					empty 				=> S_FIFO_O_EMPTY,
+					almost_full 		=> S_FIFO_O_ALMOST_FULL,
+					almost_empty		=> open);		
 
 	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					DIN 			=> S_FIFO_O_DO,
-					MCLK 			=> MCLK_I2S,
-					SCLK 			=> SCLK_I2S,
-					WS 				=> S_WS,
-					DOUT 			=> SDO_I2S);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					DIN 				=> S_FIFO_O_DO,
+					MCLK 				=> MCLK_I2S,
+					SCLK 				=> SCLK_I2S,
+					WS 					=> S_WS,
+					DOUT 				=> SDO_I2S);
 	-- End of data path
 					
 	-- Buttons for menu navigation
 	DEB_MINUS: entity work.debouncer	-- direct instantiation of component debouncer for track- button
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					I 				=> S_MINUS,
-					O				=> S_DMINUS);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					I 					=> S_MINUS,
+					O					=> S_DMINUS);
 					
 	DEB_PLUS: entity work.debouncer		-- direct instantiation of component debouncer for track+ button
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					I 				=> S_PLUS,
-					O				=> S_DPLUS);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					I 					=> S_PLUS,
+					O					=> S_DPLUS);
 
 	DEB_RCRD: entity work.debouncer		-- direct instantiation of component debouncer for record button
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					I 				=> S_RCRD,
-					O				=> S_DRCRD);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					I 					=> S_RCRD,
+					O					=> S_DRCRD);
 					
 	DEB_PLAY: entity work.debouncer		-- direct instantiation of component debouncer for play button
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					I 				=> S_PLAY,
-					O				=> S_DPLAY);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					I 					=> S_PLAY,
+					O					=> S_DPLAY);
 
 	DEB_DLT: entity work.debouncer		-- direct instantiation of component debouncer for delete button
-		port map(	CLK 			=> CLK,
-					RST 			=> RST,
-					I 				=> S_DLT,
-					O				=> S_DDLT);
+		port map(	CLK 				=> CLK,
+					RST 				=> RST,
+					I 					=> S_DLT,
+					O					=> S_DDLT);
 	-- End of buttons
 
 	-- Menu navigation
@@ -326,7 +330,7 @@ begin
 					RST					=> RST,
 					STATE				=> S_STATE,
 					TRACK				=> S_TRACK,
-					DELETE				=> '0',
+					DELETE				=> S_DELETE,
 					REC_PLAY_FINISHED	=> S_REC_PLAY_FINISHED,
 					OCCUPIED			=> S_OCCUPIED,
 					FREE_SLOTS			=> S_FREE_SLOTS,
@@ -354,7 +358,7 @@ begin
 		
 		port map(	CLK					=> CLK,
 					RST					=> RST,
-					INT					=> S_FIFO_I_WR,
+					IMP					=> S_FIFO_I_WR,
 					EN					=> S_FIFO_I_WR_EN);
 	
 	STRO: entity work.strobe_gen(rtl)
@@ -362,7 +366,7 @@ begin
 		
 		port map(	CLK					=> CLK,
 					RST					=> RST,
-					INT					=> S_FIFO_O_RD,
+					IMP					=> S_FIFO_O_RD,
 					EN					=> S_FIFO_O_RD_EN);
 	-- End of various
 
