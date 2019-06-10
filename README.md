@@ -24,18 +24,25 @@ The files constituting this design are organised as follows:
 * `vhdl_ls.toml`: Configuration file for [`rust_hdl`][rusthdl]
 * `build/`: Folder created automatically when design is simulated and
   synthesised with the help of [FuseSoC][fusesoc]
+* `Pin_assignment/`: Folder with tcl files for project
+  * `clocks.tcl`: Onboard oscillator pin assignment
+  * `led_array.tcl`: LED matrix pin assignments
+  * `pmod.tcl`: Pmod modules pin assignments
+  * `sdram_controller.tcl`: Pin assigments for onboard SDRAM
+  * `seven_segement.tcl`: Pin assigments for seven segment displays
+  * `switches.tcl`: Pin assigments for onboard buttons
 * `hdl/`: Folder with all the HDL files of the design
-  * `sdram_controller.vhdl`: Simple generic Single Data Rate (SDR)
-    SDRAM controller
-  * `sdram_controller_tb.vhdl`: Test bench for `sdram_controller`
   * `is42vm16160k_pkg.vhdl`: Constants package describing the ISSI
     IS42VM16160K SDRAM
   * `gecko4_education_pkg.vhdl`: Package with
     GECKO4-Education-specific type and constants definitions
-  * `sdram_controller_top.vhdl`: Top-level design for testing the
-    `sdram_controller` on the [GECKO4-Education][gecko4edu]
-  * `sdram_controller_top_tb.vhdl`: Test bench for the top-level
-    design `sdram_controller_top`
+  * `sdram_controller.vhdl`: Simple generic Single Data Rate (SDR)
+    SDRAM controller
+  * `DICT_WRAP.vhd`: top entity in design
+  
+  
+  
+  
 * `ghdl/`: Folder with `Makefile` to simulate the design using
   [GHDL][ghdl] and display the results using [GTKWave][gtkwave]
    * `Makefile`: `make all` compiles the whole design with

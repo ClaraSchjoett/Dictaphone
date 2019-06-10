@@ -119,6 +119,7 @@ CS|PW: MEM_CTRL debugged und kompiliert.
 ----------------------------------------------------------------------------------
 Montag 10.6.19 
 CS: Präsentation für 11.6.19 geschrieben, README.md (Markdown language) begonnen.¨
+CS|PW: Debugged und code geändert bis design wie gewünscht funktioniert hat!!
 
 
 
