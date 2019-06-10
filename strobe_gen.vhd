@@ -46,7 +46,7 @@ begin
 		if(RST = '0')  then							-- Reset low active and asynchronous
 			counter := 1;
 		elsif falling_edge(CLK) then				-- Update on falling edge
-			if EN then
+			if EN = '1' then
 				if(counter = INTERVAL) then
 					IMP <= '1';
 					counter := 1;

@@ -49,6 +49,7 @@ entity FSM_MENU is
 			DLT					: in std_logic;				-- button delete
 			PLUS				: in std_logic;				-- button plus
 			MINUS				: in std_logic;				-- button minus
+			
 			REC_PLAY_FINISHED	: in std_logic;				-- Strobe when recording or track is finished
 			OCCUPIED			: in std_logic;				-- flag shows if selected track is free (low) or occupied (high)
 			
@@ -92,19 +93,19 @@ begin -- architecture rtl
 		state_next <= state_reg;							-- This assignment is used in case of no button push. Always the last assignment is valid!
 		case state_reg is
 			when IDLE =>									-- when the state is IDLE, the condition for it to change TODO
-				if PLAY = '1' and OCCUPIED then
+				if PLAY = '1' and OCCUPIED = '1' then
 					state_next <= PLAYING;
-				elsif RCRD = '1' and not OCCUPIED then 
+				elsif RCRD = '1' and OCCUPIED = '0' then 
 					state_next <= RECORDING;
 				end if;
 			when PLAYING =>									-- when the state is PLAYING, the condition for it to change TODO
 				-- TODO
-				if REC_PLAY_FINISHED then 
+				if REC_PLAY_FINISHED = '1' then 
 					state_next <= IDLE;
 				end if;
 			when RECORDING =>								-- when the state is RECORDING, the condition for it to change TODO
 				-- TODO
-				if REC_PLAY_FINISHED then
+				if REC_PLAY_FINISHED = '1' then
 					state_next <= IDLE;
 				end if;
 			when others => null;
@@ -122,7 +123,7 @@ begin -- architecture rtl
 	TRACK: process(PLUS, MINUS, track_number)
 	begin -- process TRACK
 		track_next <= track_number;
-		if STATE = "00"											-- only change track in IDLE
+		if STATE = "00"	then									-- only change track in IDLE
 			if PLUS = '1' then
 				track_next <= track_number + 1; 				-- If no overflow, increment variable track_number
 				if track_number = 15 then						-- Check for overflow
@@ -135,7 +136,7 @@ begin -- architecture rtl
 				end if;
 			end if;
 		end if;
-	end process;
+	end process TRACK;
 		
 	-- evalutation of current track number for display on SSD
 	TRACK <= std_logic_vector(track_number);

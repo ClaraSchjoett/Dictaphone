@@ -108,3 +108,17 @@ CS: Nach Besprechung mit Maehne: FIFO testbench, zwei sep. processes für read an
 check. Strobe generator ist überflüssig, das gleiche können wir mir wait statements realisieren.
 Schreiben in ein error log ist keine anforderung, das können wir weglassen. Wird daher nicht implementiert.
 
+----------------------------------------------------------------------------------
+Freitag 7.6.19
+CS|PW: MEM_CTRL, welche die Schnittstelle zur sdram_controller, Menu und Anzeige bildet, geschrieben.
+
+----------------------------------------------------------------------------------
+Sonntag 9.6.19
+CS|PW: MEM_CTRL debugged und kompiliert. 
+
+----------------------------------------------------------------------------------
+Montag 10.6.19 
+CS: Präsentation für 11.6.19 geschrieben, README.md (Markdown language) begonnen.¨
+
+
+
