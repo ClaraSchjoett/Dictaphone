@@ -278,6 +278,8 @@ begin
 				if DELETE = '1' then						-- delete chosen track
 					S_OCCUPIED(to_integer(unsigned(TRACK))) <= '0';	-- set corresponding occupied flag to FREE
 				end if;
+				cmd_strobe <= '0';
+				S_RD_IN_PROGR <= '0';
 				
 				
 			end if;
