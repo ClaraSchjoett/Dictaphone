@@ -111,6 +111,8 @@ architecture str of MEM_CTRL is
 	signal S_FIFO_O_WR		: std_logic;
 	
 	signal S_ALL_DATA_READ	: std_logic;
+	
+
 	--constants representing states
 	constant IDLE			: std_logic_vector(1 downto 0)	:= "00";
 	constant PLAYING		: std_logic_vector(1 downto 0)	:= "01";
@@ -175,7 +177,6 @@ begin
 					
 					--this blocks reads one word from the in fifo and writes it into the SDRAM
 					if S_RD_FROM_FIFO = '1' then
-					
 						-- first get the data from the fifo (RD to high and back to low)
 						if S_WR_IN_PROGR = '0' then
 							S_WR_IN_PROGR <= '1';
@@ -232,7 +233,6 @@ begin
 							else								-- when whole track has been shifted to fifo
 								S_ADDRESS <= (others => '0');
 								S_ALL_DATA_READ <= '1';
-								--REC_PLAY_FINISHED <= '1';		-- not yet because probably there is some rest data in fifo, so playing has not finished yet
 							end if;
 						end if;
 					end if;
