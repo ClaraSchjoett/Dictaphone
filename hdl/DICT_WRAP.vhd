@@ -183,7 +183,7 @@ begin
 	WS_I2S <= S_WS;
 
 	-- Data path from mic to audio jack
-	ICNV: entity work.SER2PAR_SPI		-- direct instantiation of component conversion to parallel data
+	SER2PAR: entity work.SER2PAR_SPI	-- direct instantiation of component conversion to parallel data
 		port map(	CLK 				=> CLK,
 					RST 				=> RST,
 					SCLK				=> SCLK_SPI,
@@ -246,7 +246,7 @@ begin
 					almost_full 		=> S_FIFO_O_ALMOST_FULL,
 					almost_empty		=> open);		
 
-	CONV: entity work.PAR2SER_I2S		-- direct instantiation of component conversion to serial data
+	PAR2SER: entity work.PAR2SER_I2S	-- direct instantiation of component conversion to serial data
 		port map(	CLK 				=> CLK,
 					RST 				=> RST,
 					DIN 				=> S_FIFO_O_DO,
@@ -307,7 +307,7 @@ begin
 	-- End of menu navigation
 
 	-- Display elements
-	TRANS: entity work.DEC2SSD			-- direct instantiation of component translation TRACK to SSD control signal
+	SEVENSEG: entity work.DEC2SSD		-- direct instantiation of component translation TRACK to SSD control signal
 		port map(	TRACK 				=> S_TRACK,
 					FREE_SLOTS 			=> S_FREE_SLOTS,
 					OCCUPIED			=> S_OCCUPIED,
@@ -322,7 +322,7 @@ begin
 					audioLevelLedL 		=> S_LLVL,
 					audioLevelLedR 		=> S_RLVL);
 					
-	NAVI: entity work.LEDmatrix			-- direct instantiation of component LED matrix control
+	MATRIX: entity work.LEDmatrix		-- direct instantiation of component LED matrix control
 		port map(	CLK 				=> CLK,
 					RST 				=> RST,
 					STATE				=> S_STATE,
