@@ -3,16 +3,18 @@ ARBEITSJOURNAL PROJEKT DICTAPHONE FRÜHLING 2019
 ----------------------------------------------------------------------------------
 Dienstag 23.4.19
 
-CS|PW : Zeitplanung, Definition der groben Struktur des Designs
+CS/PW : Zeitplanung, Definition der groben Struktur des Designs
+
 ----------------------------------------------------------------------------------
 Dienstag 30.4.19
 
 CS/PW : Definition der Schnittstellen und nötigen Components (Blöcke) des Designs
 Milestones definiert, siehe ZeitplanungV01.gan
+
 ----------------------------------------------------------------------------------
 Montag 6.5.19
 
-CS : Component PAR2SER geschrieben, dieser wandelt parallele Daten von Host Board 
+CS: Component PAR2SER geschrieben, dieser wandelt parallele Daten von Host Board 
 in seriellen Daten für den I2S Bus. Pendent: korrekte Erweiterung der 16 bits auf
 24 bits. Im Moment werden bit 17 bis bit 24 nicht verwendet für das Audio-Signal.
 Control- I/O für die Signalisation "übertragen" oder "warten".
@@ -20,6 +22,7 @@ WS Output.
 
 Arguments in die Sensitivy List im File ramp_ctrl.vhd hinzugefügt. Diese fehlende
 Argumente haben die Simulation in Modelsim verfälscht.
+
 ----------------------------------------------------------------------------------
 Mittwoch 8.5.19
 
@@ -27,19 +30,22 @@ CS: Besprechung mit Mähne. Abgeklärt, dass die 16 bit parallel Daten im Block
 PAR2SER_I2S geshiftet werden, nicht vergrössert! 
 Im Block PAR2SER_I2S fehlt noch die Überprüfung, ob Daten negativ oder nicht
 und danach die korrekte Umwandlung in two's complement.
+
 ----------------------------------------------------------------------------------
 Donnerstag 9.5.19
 
 CS: Testing des Blocks PAR2SER_I2S, ich konnte feststellen, dass das Dreiecksignal
 falsch wiedergeben wird. Bug beschrieben unter Abschnitt Mittwoch.
 
-CS|PW: GitKraken als code sharing platform festgelegt, Konten eingerichtet.
+CS/PW: GitKraken als code sharing platform festgelegt, Konten eingerichtet.
+
 ----------------------------------------------------------------------------------
 Freitag 10.5.19
 
 CS: Zeitplanung geändert (aktueller Zeitplan: ZeitplanungV02) damit wir mehr Zeit für
 die Implementation haben. Milestone "Planung verifizieren lassen" auf Dienstag 
 14.5.19 verschoben wegen Career Day 7.5.19.
+
 ----------------------------------------------------------------------------------
 Samstag 11.5.19
 
@@ -49,34 +55,46 @@ Konversion funktioniert wie folgt: MSB vom parallelen input wird invertiert wenn
 Wert kleiner als 2^BITWIDTH ist. Somit werden alle Werte unter 
 total possible values / 2 als negativ interpretiert und alle
 Werte darüber als positiv interpretiert.
-----------------------------------------------------------------------------------
-????????  ??.5.19            <----- PW!!!
 
-PW: SER2PAR_SPI geschrieben. <----- PW!!!
+----------------------------------------------------------------------------------
+Samstag 11.5.19
+
+PW: SER2PAR_SPI geschrieben. Funktioniert noch nicht. Evtl timing probleme bei der
+SPI Schnittstelle.
+
 ----------------------------------------------------------------------------------
 Dienstag 14.5.19
 
-CS|PW : SER2PAR_SPI debugged. Test mit Pegel auf LED Matrix fehlt noch.
-FSM_MENU Grundstruktur geschrieben (entity und case-switch statement)
+PW : SER2PAR_SPI debugged. Es wurde ein Bit zuviel hineingeclocked. 
+Test mit Pegel auf LED Matrix fehlt noch.
+CS : FSM_MENU Grundstruktur geschrieben (entity und case-switch statement)
+
 Ziele für nächsten Dienstag: 
 7 segment display ansteuerung (CS)
 FIFO (PW)
 Lautstärke Pegel Anzeige auf LED Matrix (PW)
 FSM_MENU testbench und debouncer für FSM_MENU(CS)
 FIFO testbench (CS)
+
 ----------------------------------------------------------------------------------
 Mittwoch 15.5.19
 
-Zeitplan updatiert, aktuelle Version V0.2
+Zeitplan aktualisiert. aktuelle Version V0.2
+
 ----------------------------------------------------------------------------------
 Dienstag 28.5.19
-CS: BCD2SSD geschrieben, Konversion von 2 binärcodierte Zahlen (0 bis 16) für die
+
+CS: DEC2SSD geschrieben, Konversion von 2 binärcodierte Zahlen (0 bis 16) für die
 Anzeige auf dem Sieben Segment Display.
 Besprechung mit Maehne um FSM_MENU zu bereinigen (syntaktische und strukturelle
 Fehler behoben).
 
+PW: FIFO geschrieben, Grundstruktur kopiert aus Internet (Quelle siehe file)
+Signale und Logik ergänzt und angepasst. (vor Allem almost_full, almost empty, etc.)
+
 ----------------------------------------------------------------------------------
 Mittwoch 29.5.19
+
 CS: Ziele vom 14.5.19 die erfüllt sind: 
 7 segement Ansteuerung, FSM_menu und debouncer direkt auf HW getestet.
 
@@ -86,16 +104,21 @@ LED Matrix ansteuerung fehlt noch.
 
 ----------------------------------------------------------------------------------
 Donnerstag 30.5.19 
-PW|CS: Path Mic-Audio jack realisiert. Funktioniert!
+
+PW/CS: Path Mic-Audio jack realisiert. Funktioniert!
 
 ----------------------------------------------------------------------------------
 Samstag 1.6.19
-PW|CS: Path Mic-FIFO-Audio jack realiisert. Funktioniert!
-FIFO testbench begonnen, assert und automatischen Datenvergleich muss noch implementiert werden.
+
+PW/CS: Path Mic-FIFO-Audio jack realiisert. Funktioniert!
+FIFO testbench begonnen, assert und automatischen Datenvergleich muss noch 
+implementiert werden.
 ----------------------------------------------------------------------------------
 Sonntag 2.6.19
+
 CS: FIFO testbench, Lesen und Schreiben von/in zwei versch. Text Dateien implementiert.
-Assert in einer Procedure implementiert, die Fehler müssen noch in ein Error Log geschrieben werden.
+Assert in einer Procedure implementiert, die Fehler müssen noch in ein Error Log 
+geschrieben werden.
 Der Code enhält noch Fehler, die ich alleine nicht beheben kann:
 1) Simulation hält plötzlich an
 2) Lesen outside of file Error
@@ -104,22 +127,36 @@ Der Code enhält noch Fehler, die ich alleine nicht beheben kann:
 ----------------------------------------------------------------------------------
 Dienstag 4.6.19
 
-CS: Nach Besprechung mit Maehne: FIFO testbench, zwei sep. processes für read and write. Eins für 
-check. Strobe generator ist überflüssig, das gleiche können wir mir wait statements realisieren.
-Schreiben in ein error log ist keine anforderung, das können wir weglassen. Wird daher nicht implementiert.
+CS: Nach Besprechung mit Maehne: FIFO testbench, zwei sep. processes für read and 
+write. Eins für 
+check. Strobe generator ist überflüssig, das gleiche können wir mir wait statements 
+realisieren.
+Schreiben in ein error log ist keine anforderung, das können wir weglassen. 
+Wird daher nicht implementiert.
 
 ----------------------------------------------------------------------------------
 Freitag 7.6.19
-CS|PW: MEM_CTRL, welche die Schnittstelle zur sdram_controller, Menu und Anzeige bildet, geschrieben.
+
+PW: MEM_CTRL, welche die Schnittstelle zur sdram_controller, Menu und Anzeige bildet, 
+geschrieben. Noch nicht gedebugged und getestet.
+CS: Dokumentation geschrieben. 
 
 ----------------------------------------------------------------------------------
 Sonntag 9.6.19
-CS|PW: MEM_CTRL debugged und kompiliert. 
+
+CS/PW: MEM_CTRL debugged und kompiliert. 
 
 ----------------------------------------------------------------------------------
 Montag 10.6.19 
+
 CS: Präsentation für 11.6.19 geschrieben, README.md (Markdown language) begonnen.¨
-CS|PW: Debugged und code geändert bis design wie gewünscht funktioniert hat!!
+CS/PW: Debugged und code geändert bis design wie gewünscht funktioniert hat!!
+Zeitplan aktualisiert, Aktuelle Version V0.3
 
+----------------------------------------------------------------------------------
+Dienstag 11.6.19
 
+CS: README file fertig geschrieben
+PW: Dokumentation von MEM_CTRL etc.
+CS/PW: Projekt erfolgreich präsentiert :-)
 

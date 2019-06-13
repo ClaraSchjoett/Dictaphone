@@ -48,6 +48,7 @@ The files constituting this design are organised as follows:
   * `PeakLevelMeter.vhd`: Provided by Torsten Maehne, instantiated in peak_level_ctrl
   * `sdram_controller.vhdl`: Simple generic Single Data Rate (SDR) SDRAM controller
   * `SER2PAR_SPI.vhd`: Serial to parallel converter, data from microphone
+  * `strobe_gen.vhd`: Strobe generator for generating 48.8kHz rate, instantiated in DICT_WRAP
 
 
 * `txt/`: Folder with text files used in project
