@@ -6,7 +6,7 @@
 -- Author     	: 	Clara Schjoett
 -- Company    	: 	BFH
 -- Created    	: 	2019-06-01
--- Last update	: 	2019
+-- Last update	: 	2019-06-15
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
@@ -18,6 +18,8 @@
 -- 2019-06-01		1.0			Clara		Created
 -- 2019-06-02		1.1			Clara		Text I/O from files implemented
 -- 2019-06-07		1.1			Clara		Required functionalities implemented
+-- 2019-06-15		1.1			Clara		Some timing problems solved: written 
+--											and read data is now consistent.
 -------------------------------------------------------------------------------
 -- Inputs		:
 -- Outputs		:
@@ -40,8 +42,6 @@ ARCHITECTURE behavior OF fifo_tb IS
 	-- Generics
 	constant ADDR_WIDTH			: positive 	:= 10;
 	constant DATA_WIDTH  		: positive 	:= 16;
-	constant ALMOST_FULL_RATIO	: real 		:= 0.75;
-	constant ALMOST_EMPTY_RATIO	: real		:= 0.25;
 	
 	--Inputs
 	signal clk					: std_logic := '0';
@@ -58,12 +58,13 @@ ARCHITECTURE behavior OF fifo_tb IS
 	signal almost_full			: std_logic;
 	
 	-- Clock period and other time definitions
-	constant CLK_PERIOD 		: time 		:= 20 ns;
+	constant CLK_PERIOD 		: time 		:= 20 ns;				-- 50MHz
+	constant DELAY				: time		:= 2 ns;				-- propagation delay
 	
 	-- Constants calculated from generic values
-	constant COUNT_TOTAL		: integer 	:= integer(2**ADDR_WIDTH - 1);
-	constant COUNT_ALMOST_EMPTY	: integer 	:= integer(ALMOST_EMPTY_RATIO*real(2**ADDR_WIDTH)-real(1));
-	constant COUNT_ALMOST_FULL 	: integer 	:= integer(ALMOST_FULL_RATIO*real(2**ADDR_WIDTH)-real(1));
+	constant COUNT_TOTAL		: integer 	:= integer(2**ADDR_WIDTH);				-- default: 1024
+	constant COUNT_ALMOST_EMPTY	: integer 	:= integer(0.25*real(2**ADDR_WIDTH));	-- default: 256
+	constant COUNT_ALMOST_FULL 	: integer 	:= integer(0.75*real(2**ADDR_WIDTH));	-- default: 768
 	
 	-- testbench signals
 	signal tests_done			: boolean 	:= false; 				-- true when all test bench processes are finished
@@ -72,7 +73,7 @@ ARCHITECTURE behavior OF fifo_tb IS
 	signal seq					: std_logic_vector(0 to 2);			-- current testbench sequence
 	signal seq_r				: std_logic_vector(0 to 2) := "000";-- testbench sequence for reading process
 	signal seq_w				: std_logic_vector(0 to 2) := "000";-- testbench sequence for writing process
-	signal word_counter     	: integer := 0; -- range 0 to 1023 := 0;		-- number of words in FIFO
+	signal word_counter     	: integer := 0; 					-- number of words in FIFO
 	
 	
 BEGIN
@@ -80,9 +81,7 @@ BEGIN
 	DUT: entity work.fifo
 		generic map(
 			ADDR_WIDTH			=> ADDR_WIDTH,
-			DATA_WIDTH			=> DATA_WIDTH,
-			ALMOST_FULL_RATIO	=> ALMOST_FULL_RATIO,
-			ALMOST_EMPTY_RATIO	=> ALMOST_EMPTY_RATIO)
+			DATA_WIDTH			=> DATA_WIDTH)
 		port map(
 			clk					=> clk,
 			reset				=> reset,
@@ -114,7 +113,7 @@ BEGIN
 	end process MAX_PROC;
 	
 	-- Monitor value of word counter
-	COUNTER_PROC: process(wr, rd, clk)
+	COUNTER_PROC: process(clk)
 	begin
 		if clk'event and clk = '1' then
 			if wr = '1' and rd = '0' then
@@ -141,10 +140,9 @@ BEGIN
 		-- SEQUENCE 0
 		-- This while loop writes data with system clock rate into FIFO
 		if seq = "000" then								-- Sequence is incremented when FIFO is full
-			L1 : loop
-				exit L1 when seq > "000";
+			L1: while full = '0' loop
 				wait until falling_edge(clk);
-				if not endfile(dataIn) then
+				if  full /= '1' then 
 					readline(dataIn, line_in); 			-- parameter: file handle, line number (iterated automatically)
 					read(line_in, data);					
 						wr <= '1';
@@ -207,16 +205,15 @@ BEGIN
 		
 		-- SEQUENCE 0 and 1
 		-- This while loop reads data from FIFO with 1/3 of system clock rate
-		if seq = "000" or seq = "001" then
-			L1: loop 										-- line number is looped automatically
-				exit L1 when seq > "001";
+		if seq = "000" or seq = "001" then					
+			L1: while empty = '0' loop
 				wait until falling_edge(CLK);
 				wait until falling_edge(CLK);
 				if empty = '0' then
 					rd <= '1';								-- rd must be '1' on pos. clock edge to clock out data
 				end if;
 				wait until falling_edge(CLK);				-- Data is clocked out because rd is '1'
-				if data_out /= "UUUUUUUUUUUUUUUU" and empty = '0' then
+				if data_out /= "UUUUUUUUUUUUUUUU" and empty = '0' then -- line number is looped automatically
 					write(line_out, data_out); 				-- Write data in FIFO to line_out
 					writeline(dataOut, line_out);			-- Write line_out to text file "data_out.txt"
 				end if;
@@ -232,8 +229,7 @@ BEGIN
 		-- SEQUENCE 3		
 		-- This while loop reads data from FIFO with system clock rate
 		if seq = "011" then
-			L2: loop										
-				exit L2 when seq = "100"; 
+			L2: while almost_empty = '0' loop
 				rd <= '1';
 				wait until falling_edge(CLK);				-- Data is clocked out because rd is '1'
 				if data_out /= "UUUUUUUUUUUUUUUU" then
@@ -242,7 +238,7 @@ BEGIN
 				end if;
 				--rd <= '0';
 				if almost_empty = '1' and seq = "011" then
-					seq_r <= "100"; 							--4
+					seq_r <= "100"; 						--4
 				end if;
 			end loop;
 			rd <= '0';
@@ -253,8 +249,7 @@ BEGIN
 		-- SEQUENCE 5		
 		-- This while loop reads data from FIFO with system clock rate
 		if seq = "101" then
-			L3: loop	
-				exit L3 when seq > "101";
+			L3: while almost_empty = '0' loop
 				rd <= '1';
 				wait until falling_edge(CLK);				-- Data is clocked out because rd is '1'
 				if data_out /= "UUUUUUUUUUUUUUUU" then
@@ -263,7 +258,7 @@ BEGIN
 				end if;
 				rd <= '0';
 				if almost_empty = '1' and seq = "101" then
-					seq_r <= "110";								--6;
+					seq_r <= "110";							--6;
 				end if;
 			end loop;
 		end if;
@@ -276,33 +271,41 @@ BEGIN
 		
 	end process READ_PROC;
 	
-	-- Checks if sginalisation outputs from FIFO are correct
-	MONITOR_SIGNALS: process(word_counter)
+	-- Checks if signalisation outputs from FIFO are correct
+	MONITOR_SIGNALS: process
 	begin
-		
+		wait until rising_edge(CLK);
+		wait for DELAY;										
 		if data_out /= "UUUUUUUUUUUUUUUU" then
 
 			-- Check empty flag
-			assert (word_counter = 0 and empty = '1') or (word_counter /= 0 and empty = '0')
+			assert (word_counter = 0 and empty = '1') 
+				--or (word_counter = 1 and empty = '1')
+				or (word_counter > 1 and empty = '0')
 			report "Flag empty is: " & std_logic'image(empty) & " but current FIFO content is: " & integer'image(word_counter)
 			severity error;
 			
 			-- Check almost_empty flag
-			assert (word_counter <= COUNT_ALMOST_EMPTY and almost_empty = '1') or (word_counter > COUNT_ALMOST_EMPTY and almost_empty = '0')
+			assert (word_counter < COUNT_ALMOST_EMPTY+1 and almost_empty = '1') 
+				or (word_counter > COUNT_ALMOST_EMPTY-1 and almost_empty = '0')
 			report "Flag almost_empty is: " & std_logic'image(almost_empty) & " but current FIFO content is: " & integer'image(word_counter)
 			severity warning;
 			
 			-- Check almost_full flag
-			assert (word_counter >= COUNT_ALMOST_FULL and almost_full = '1') or (word_counter < COUNT_ALMOST_FULL and almost_full = '0')
+			assert (word_counter > COUNT_ALMOST_FULL-1 and almost_full = '1') 
+				or (word_counter < COUNT_ALMOST_FULL+1 and almost_full = '0')
 			report "Flag almost_full is: " & std_logic'image(almost_full) & " but current FIFO content is: " & integer'image(word_counter)
 			severity warning;
 			
 			-- Check full flag
-			assert (word_counter = COUNT_TOTAL and full = '1') or (word_counter /= COUNT_TOTAL and full = '0')
+			assert (word_counter = COUNT_TOTAL and full = '1') 
+				--or (word_counter = COUNT_TOTAL-1 and full = '1')
+				or (word_counter < COUNT_TOTAL-3 and full = '0')
 			report "Flag full is: " & std_logic'image(full) & " but current FIFO content is: " & integer'image(word_counter)
 			severity error;
 			
 		end if;
+
 		
 	end process MONITOR_SIGNALS;
 	

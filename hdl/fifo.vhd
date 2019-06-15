@@ -6,7 +6,7 @@
 -- Author     	: 	Peter Wuethrich
 -- Company    	: 	BFH
 -- Created    	: 	2019-05-20
--- Last update	: 	2019
+-- Last update	: 	2019-06-15
 -- Platform   	: 	Xilinx ISE 14.7
 -- Standard   	: 	VHDL'93/02, Math Packages
 -- Sources		:	http://www.deathbylogic.com/2013/07/vhdl-standard-fifo/
@@ -54,26 +54,26 @@ entity fifo is
 end entity fifo;
 
 architecture rtl of fifo is
-	type		memory_type is array(0 to 2**ADDR_WIDTH-1)				--creating datatype for the memory, which is a two-dimensional array 1024x16
+	type		memory_type is array(0 to 2**ADDR_WIDTH-1)					--creating datatype for the memory, which is a two-dimensional array 1024x16
 				of	std_logic_vector(DATA_WIDTH-1 downto 0);			
-	signal		mem			:	memory_type;							--create an instance of the memory
-	signal		head		:	natural range 0 to 2**ADDR_WIDTH-1;		--write pointer (head of the buffer, is ahead), range from 0 to 1023
-	signal		tail		:	natural range 0 to 2**ADDR_WIDTH-1;		--read pointer (tail of the buffer), range from 0 to 1023
-	signal		looped		:	boolean; 								--looped means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
+	signal		mem			:	memory_type;								--create an instance of the memory
+	signal		head		:	natural range 0 to 2**ADDR_WIDTH-1;			--write pointer (head of the buffer, is ahead), range from 0 to 1023
+	signal		tail		:	natural range 0 to 2**ADDR_WIDTH-1;			--read pointer (tail of the buffer), range from 0 to 1023
+	signal		looped		:	boolean; 									--looped = true means head is behind tail (head looped to the beginning of the memory range --> tail is infront of head)
 
 
 begin -- architecture rtl
 	process(clk)
 
-		constant 	fifo_depth 			:	positive 	:= 2**ADDR_WIDTH;		--number of words in the FIFO
-		constant	almost_full_num		:	positive	:= positive((real(fifo_depth)*ALMOST_FULL_RATIO));	--up to number of words FIFO is almost_empty
-		constant	almost_empty_num	:	positive	:= positive((real(fifo_depth)*ALMOST_EMPTY_RATIO));	--starting at this number of words upwards FIFO is almost_full
+		constant 	fifo_depth 			:	positive 	:= 2**ADDR_WIDTH;									--number of words in the FIFO (1024)
+		constant	almost_full_num		:	positive	:= positive(real(fifo_depth)*ALMOST_FULL_RATIO);	--up to number of words FIFO is almost_empty (256)
+		constant	almost_empty_num	:	positive	:= positive(real(fifo_depth)*ALMOST_EMPTY_RATIO);	--starting at this number of words upwards FIFO is almost_full (768)
 
 
 		begin
 			if rising_edge(clk) then
 
-				if reset = '0' then --set to inital conditions
+				if reset = '0' then -- synchrinous reset: set to inital conditions
 					head <= 0;
 					tail <= 0;
 
@@ -117,7 +117,7 @@ begin -- architecture rtl
 				end if;
 
 				-- Update Flags empty and full
-				if head = tail then
+				if head = tail-1 or head = tail+1 then
 					if looped then
 						full <= '1';
 					else
@@ -136,7 +136,7 @@ begin -- architecture rtl
 						almost_full <= '0';
 					end if;
 
-					if (head - tail) <= (almost_empty_num) then
+					if (head - tail) <= (almost_empty_num-1) then
 						almost_empty <= '1';
 					else
 						almost_empty <= '0';
@@ -148,7 +148,7 @@ begin -- architecture rtl
 					else
 						almost_full <= '0';
 					end if;
-					if (head + fifo_depth - tail) <= (almost_empty_num) then
+					if (head + fifo_depth - tail) <= (almost_empty_num-1) then
 						almost_empty <= '1';
 					else
 						almost_empty <= '0';
