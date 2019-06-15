@@ -160,3 +160,9 @@ CS: README file fertig geschrieben
 PW: Dokumentation von MEM_CTRL etc.
 CS/PW: Projekt erfolgreich präsentiert :-)
 
+----------------------------------------------------------------------------------
+Samstag 15.6.19
+
+PW/CS: Datenlese-/Schreibe-Fehler in FIFO testbench behoben. Timing Fehler mit
+FIFO Flags besteht immer noch.
+
