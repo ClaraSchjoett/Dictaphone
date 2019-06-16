@@ -300,7 +300,7 @@ BEGIN
 			-- Check full flag
 			assert (word_counter = COUNT_TOTAL and full = '1') 
 				--or (word_counter = COUNT_TOTAL-1 and full = '1')
-				or (word_counter < COUNT_TOTAL-3 and full = '0')
+				or (word_counter < COUNT_TOTAL-2 and full = '0')
 			report "Flag full is: " & std_logic'image(full) & " but current FIFO content is: " & integer'image(word_counter)
 			severity error;
 			

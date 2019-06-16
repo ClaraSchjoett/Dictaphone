@@ -117,7 +117,7 @@ begin -- architecture rtl
 				end if;
 
 				-- Update Flags empty and full
-				if head = tail-1 or head = tail+1 then
+				if head = tail-1 or head = tail+1 or head = tail then
 					if looped then
 						full <= '1';
 					else
